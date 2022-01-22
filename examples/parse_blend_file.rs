@@ -2089,307 +2089,332 @@ fn main() -> std::io::Result<()> {
         bytes_read.len()
     );
     let mut byte_index: usize = 0;
+    let mut struct_index: usize = 0;
     for struct_read in structs_read {
         println!("{} ({})", struct_read, byte_index);
-        if let Some(struct_found) = dna_structs_hm.get(&struct_read) {
-            match struct_read.as_str() {
-                "Scene" => {
-                    for member in &struct_found.members {
-                        match member.mem_name.as_str() {
-                            "id" => {
-                                let id: String = get_id_name(
-                                    member,
-                                    &bytes_read,
-                                    byte_index,
-                                    &dna_structs_hm,
-                                    &dna_types_hm,
-                                );
-                                println!("  ID.name = {:?}", id);
-                                base_name = id.clone();
-                            }
-                            "unit" => {
-                                if let Some(struct_found2) =
-                                    dna_structs_hm.get(member.mem_type.as_str())
-                                {
-                                    let mut byte_index2: usize = 0;
-                                    for member2 in &struct_found2.members {
-                                        if let Some(type_found2) =
-                                            dna_types_hm.get(&member2.mem_type)
-                                        {
-                                            let mem_tlen2: u16 =
-                                                calc_mem_tlen(member2, *type_found2);
-                                            if member2.mem_name.contains("scale_length") {
-                                                scale_length = get_float(
-                                                    member2,
-                                                    &bytes_read,
-                                                    byte_index + byte_index2,
-                                                );
-                                                byte_index2 += mem_tlen2 as usize;
-                                            } else {
-                                                byte_index2 += mem_tlen2 as usize;
+        if let Some(tlen) = dna_types_hm.get(&struct_read) {
+            if let Some(struct_found) = dna_structs_hm.get(&struct_read) {
+                match struct_read.as_str() {
+                    "Scene" => {
+                        for member in &struct_found.members {
+                            match member.mem_name.as_str() {
+                                "id" => {
+                                    let id: String = get_id_name(
+                                        member,
+                                        &bytes_read,
+                                        byte_index,
+                                        &dna_structs_hm,
+                                        &dna_types_hm,
+                                    );
+                                    println!("  ID.name = {:?}", id);
+                                    base_name = id.clone();
+                                }
+                                "unit" => {
+                                    if let Some(struct_found2) =
+                                        dna_structs_hm.get(member.mem_type.as_str())
+                                    {
+                                        let mut byte_index2: usize = 0;
+                                        for member2 in &struct_found2.members {
+                                            if let Some(type_found2) =
+                                                dna_types_hm.get(&member2.mem_type)
+                                            {
+                                                let mem_tlen2: u16 =
+                                                    calc_mem_tlen(member2, *type_found2);
+                                                if member2.mem_name.contains("scale_length") {
+                                                    scale_length = get_float(
+                                                        member2,
+                                                        &bytes_read,
+                                                        byte_index + byte_index2,
+                                                    );
+                                                    byte_index2 += mem_tlen2 as usize;
+                                                } else {
+                                                    byte_index2 += mem_tlen2 as usize;
+                                                }
                                             }
                                         }
                                     }
                                 }
+                                _ => {}
                             }
-                            _ => {}
+                            // find mem_type in dna_types.names
+                            if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                byte_index += mem_tlen as usize;
+                            }
                         }
-                        // find mem_type in dna_types.names
-                        if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
-                            let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
-                            byte_index += mem_tlen as usize;
+                        println!("  scale_length = {}", scale_length);
+                    }
+                    "Object" => {
+                        for member in &struct_found.members {
+                            match member.mem_name.as_str() {
+                                "id" => {
+                                    let id: String = get_id_name(
+                                        member,
+                                        &bytes_read,
+                                        byte_index,
+                                        &dna_structs_hm,
+                                        &dna_types_hm,
+                                    );
+                                    println!("  ID.name = {:?}", id);
+                                    base_name = id.clone();
+                                }
+                                "obmat[4][4]" => {
+                                    let obmat: [f32; 16] =
+                                        get_matrix(member, &bytes_read, byte_index);
+                                    println!("  obmat[4][4] = {:?}", obmat);
+                                    println!("  scale_length = {}", scale_length);
+                                    object_to_world = Transform::new(
+                                        obmat[0],
+                                        obmat[4],
+                                        obmat[8],
+                                        obmat[12] * scale_length,
+                                        obmat[1],
+                                        obmat[5],
+                                        obmat[9],
+                                        obmat[13] * scale_length,
+                                        obmat[2],
+                                        obmat[6],
+                                        obmat[10],
+                                        obmat[14] * scale_length,
+                                        obmat[3],
+                                        obmat[7],
+                                        obmat[11],
+                                        obmat[15],
+                                    );
+                                    println!("  object_to_world = {:?}", object_to_world);
+                                    object_to_world_hm.insert(base_name.clone(), object_to_world);
+                                }
+                                _ => {}
+                            }
+                            // find mem_type in dna_types.names
+                            if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                byte_index += mem_tlen as usize;
+                            }
                         }
                     }
-                    println!("  scale_length = {}", scale_length);
-                }
-                "Object" => {
-                    for member in &struct_found.members {
-                        match member.mem_name.as_str() {
-                            "id" => {
-                                let id: String = get_id_name(
-                                    member,
-                                    &bytes_read,
-                                    byte_index,
-                                    &dna_structs_hm,
-                                    &dna_types_hm,
-                                );
-                                println!("  ID.name = {:?}", id);
-                                base_name = id.clone();
+                    "Camera" => {
+                        let mut lens: f32 = 0.0;
+                        let mut clipsta: f32 = 0.0;
+                        let mut sensor_x: f32 = 0.0;
+                        let mut sensor_y: f32 = 0.0;
+                        for member in &struct_found.members {
+                            match member.mem_name.as_str() {
+                                "id" => {
+                                    let id: String = get_id_name(
+                                        member,
+                                        &bytes_read,
+                                        byte_index,
+                                        &dna_structs_hm,
+                                        &dna_types_hm,
+                                    );
+                                    println!("  ID.name = {:?}", id);
+                                    base_name = id.clone();
+                                }
+                                "lens" => {
+                                    lens = get_float(member, &bytes_read, byte_index);
+                                }
+                                "clipsta" => {
+                                    clipsta = get_float(member, &bytes_read, byte_index);
+                                }
+                                "sensor_x" => {
+                                    sensor_x = get_float(member, &bytes_read, byte_index);
+                                }
+                                "sensor_y" => {
+                                    sensor_y = get_float(member, &bytes_read, byte_index);
+                                }
+                                _ => {}
                             }
-                            "obmat[4][4]" => {
-                                let obmat: [f32; 16] = get_matrix(member, &bytes_read, byte_index);
-                                println!("  obmat[4][4] = {:?}", obmat);
-                                println!("  scale_length = {}", scale_length);
-                                object_to_world = Transform::new(
-                                    obmat[0],
-                                    obmat[4],
-                                    obmat[8],
-                                    obmat[12] * scale_length,
-                                    obmat[1],
-                                    obmat[5],
-                                    obmat[9],
-                                    obmat[13] * scale_length,
-                                    obmat[2],
-                                    obmat[6],
-                                    obmat[10],
-                                    obmat[14] * scale_length,
-                                    obmat[3],
-                                    obmat[7],
-                                    obmat[11],
-                                    obmat[15],
-                                );
-                                println!("  object_to_world = {:?}", object_to_world);
-                                object_to_world_hm.insert(base_name.clone(), object_to_world);
+                            // find mem_type in dna_types.names
+                            if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                byte_index += mem_tlen as usize;
                             }
-                            _ => {}
                         }
-                        // find mem_type in dna_types.names
-                        if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
-                            let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
-                            byte_index += mem_tlen as usize;
+                        // calculate angle_x and angle_y
+                        angle_x = degrees(focallength_to_fov(lens, sensor_x) as Float);
+                        angle_y = degrees(focallength_to_fov(lens, sensor_y) as Float);
+                        let cam: BlendCamera = BlendCamera {
+                            lens,
+                            angle_x,
+                            angle_y,
+                            clipsta,
+                        };
+                        println!("  {:?}", cam);
+                        camera_hm.insert(base_name.clone(), cam);
+                    }
+                    "Material" => {
+                        let mut r: f32 = 0.0;
+                        let mut g: f32 = 0.0;
+                        let mut b: f32 = 0.0;
+                        let mut specr: f32 = 0.0;
+                        let mut specg: f32 = 0.0;
+                        let mut specb: f32 = 0.0;
+                        let mut mirr: f32 = 0.0;
+                        let mut mirg: f32 = 0.0;
+                        let mut mirb: f32 = 0.0;
+                        let mut emit: f32 = 0.0;
+                        let mut ang: f32 = 0.0;
+                        let mut ray_mirror: f32 = 0.0;
+                        let mut roughness: f32 = 0.0;
+                        for member in &struct_found.members {
+                            match member.mem_name.as_str() {
+                                "id" => {
+                                    let id: String = get_id_name(
+                                        member,
+                                        &bytes_read,
+                                        byte_index,
+                                        &dna_structs_hm,
+                                        &dna_types_hm,
+                                    );
+                                    println!("  ID.name = {:?}", id);
+                                    base_name = id.clone();
+                                }
+                                "r" => {
+                                    r = get_float(member, &bytes_read, byte_index);
+                                }
+                                "g" => {
+                                    g = get_float(member, &bytes_read, byte_index);
+                                }
+                                "b" => {
+                                    b = get_float(member, &bytes_read, byte_index);
+                                }
+                                "specr" => {
+                                    specr = get_float(member, &bytes_read, byte_index);
+                                }
+                                "specg" => {
+                                    specg = get_float(member, &bytes_read, byte_index);
+                                }
+                                "specb" => {
+                                    specb = get_float(member, &bytes_read, byte_index);
+                                }
+                                "mirr" => {
+                                    mirr = get_float(member, &bytes_read, byte_index);
+                                }
+                                "mirg" => {
+                                    mirg = get_float(member, &bytes_read, byte_index);
+                                }
+                                "mirb" => {
+                                    mirb = get_float(member, &bytes_read, byte_index);
+                                }
+                                "emit" => {
+                                    emit = get_float(member, &bytes_read, byte_index);
+                                }
+                                "ang" => {
+                                    ang = get_float(member, &bytes_read, byte_index);
+                                }
+                                "ray_mirror" => {
+                                    ray_mirror = get_float(member, &bytes_read, byte_index);
+                                }
+                                "roughness" => {
+                                    roughness = get_float(member, &bytes_read, byte_index);
+                                }
+                                _ => {}
+                            }
+                            // find mem_type in dna_types.names
+                            if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                byte_index += mem_tlen as usize;
+                            }
+                        }
+                        // Blend279Material
+                        let mat: Blend279Material = Blend279Material {
+                            r: r,
+                            g: g,
+                            b: b,
+                            a: 1.0,
+                            specr: specr,
+                            specg: specg,
+                            specb: specb,
+                            mirr: mirr,
+                            mirg: mirg,
+                            mirb: mirb,
+                            emit: emit,
+                            ang: ang,
+                            ray_mirror: ray_mirror,
+                            roughness: roughness,
+                        };
+                        println!("  mat[{:?}] = {:?}", base_name, mat);
+                        material_hm.insert(base_name.clone(), mat);
+                    }
+                    "Mesh" => {
+                        let mut totvert: i32 = 0;
+                        let mut totedge: i32 = 0;
+                        let mut totface: i32 = 0;
+                        let mut totselect: i32 = 0;
+                        let mut totpoly: i32 = 0;
+                        let mut totloop: i32 = 0;
+                        for member in &struct_found.members {
+                            match member.mem_name.as_str() {
+                                "id" => {
+                                    let id: String = get_id_name(
+                                        member,
+                                        &bytes_read,
+                                        byte_index,
+                                        &dna_structs_hm,
+                                        &dna_types_hm,
+                                    );
+                                    println!("  ID.name = {:?}", id);
+                                    base_name = id.clone();
+                                }
+                                "totvert" => {
+                                    totvert = get_int(member, &bytes_read, byte_index);
+                                    println!("  totvert = {:?}", totvert);
+                                }
+                                "totedge" => {
+                                    totedge = get_int(member, &bytes_read, byte_index);
+                                    println!("  totedge = {:?}", totedge);
+                                }
+                                "totface" => {
+                                    totface = get_int(member, &bytes_read, byte_index);
+                                    println!("  totface = {:?}", totface);
+                                }
+                                "totselect" => {
+                                    totselect = get_int(member, &bytes_read, byte_index);
+                                    println!("  totselect = {:?}", totselect);
+                                }
+                                "totpoly" => {
+                                    totpoly = get_int(member, &bytes_read, byte_index);
+                                    println!("  totpoly = {:?}", totpoly);
+                                }
+                                "totloop" => {
+                                    totloop = get_int(member, &bytes_read, byte_index);
+                                    println!("  totloop = {:?}", totloop);
+                                }
+                                _ => {}
+                            }
+                            // find mem_type in dna_types.names
+                            if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                byte_index += mem_tlen as usize;
+                            }
                         }
                     }
+                    // "MVert" => {
+                    //     // WORK
+                    //     let mut co: [f32; 3] = [0.0_f32; 3];
+                    //     for member in &struct_found.members {
+                    //         println!("{:?}", member);
+                    //         match member.mem_name.as_str() {
+                    //             //     "co" => {
+                    //             //         co = get_float3(member, &bytes_read, byte_index);
+                    //             //     }
+                    //             _ => {}
+                    //         }
+                    //         // find mem_type in dna_types.names
+                    //         if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                    //             let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                    //             byte_index += mem_tlen as usize;
+                    //         }
+                    //     }
+                    // }
+                    _ => {}
                 }
-                "Camera" => {
-                    let mut lens: f32 = 0.0;
-                    let mut clipsta: f32 = 0.0;
-                    let mut sensor_x: f32 = 0.0;
-                    let mut sensor_y: f32 = 0.0;
-                    for member in &struct_found.members {
-                        match member.mem_name.as_str() {
-                            "id" => {
-                                let id: String = get_id_name(
-                                    member,
-                                    &bytes_read,
-                                    byte_index,
-                                    &dna_structs_hm,
-                                    &dna_types_hm,
-                                );
-                                println!("  ID.name = {:?}", id);
-                                base_name = id.clone();
-                            }
-                            "lens" => {
-                                lens = get_float(member, &bytes_read, byte_index);
-                            }
-                            "clipsta" => {
-                                clipsta = get_float(member, &bytes_read, byte_index);
-                            }
-                            "sensor_x" => {
-                                sensor_x = get_float(member, &bytes_read, byte_index);
-                            }
-                            "sensor_y" => {
-                                sensor_y = get_float(member, &bytes_read, byte_index);
-                            }
-                            _ => {}
-                        }
-                        // find mem_type in dna_types.names
-                        if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
-                            let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
-                            byte_index += mem_tlen as usize;
-                        }
-                    }
-                    // calculate angle_x and angle_y
-                    angle_x = degrees(focallength_to_fov(lens, sensor_x) as Float);
-                    angle_y = degrees(focallength_to_fov(lens, sensor_y) as Float);
-                    let cam: BlendCamera = BlendCamera {
-                        lens,
-                        angle_x,
-                        angle_y,
-                        clipsta,
-                    };
-                    println!("  {:?}", cam);
-                    camera_hm.insert(base_name.clone(), cam);
-                }
-                "Material" => {
-                    let mut r: f32 = 0.0;
-                    let mut g: f32 = 0.0;
-                    let mut b: f32 = 0.0;
-                    let mut specr: f32 = 0.0;
-                    let mut specg: f32 = 0.0;
-                    let mut specb: f32 = 0.0;
-                    let mut mirr: f32 = 0.0;
-                    let mut mirg: f32 = 0.0;
-                    let mut mirb: f32 = 0.0;
-                    let mut emit: f32 = 0.0;
-                    let mut ang: f32 = 0.0;
-                    let mut ray_mirror: f32 = 0.0;
-                    let mut roughness: f32 = 0.0;
-                    for member in &struct_found.members {
-                        match member.mem_name.as_str() {
-                            "id" => {
-                                let id: String = get_id_name(
-                                    member,
-                                    &bytes_read,
-                                    byte_index,
-                                    &dna_structs_hm,
-                                    &dna_types_hm,
-                                );
-                                println!("  ID.name = {:?}", id);
-                                base_name = id.clone();
-                            }
-                            "r" => {
-                                r = get_float(member, &bytes_read, byte_index);
-                            }
-                            "g" => {
-                                g = get_float(member, &bytes_read, byte_index);
-                            }
-                            "b" => {
-                                b = get_float(member, &bytes_read, byte_index);
-                            }
-                            "specr" => {
-                                specr = get_float(member, &bytes_read, byte_index);
-                            }
-                            "specg" => {
-                                specg = get_float(member, &bytes_read, byte_index);
-                            }
-                            "specb" => {
-                                specb = get_float(member, &bytes_read, byte_index);
-                            }
-                            "mirr" => {
-                                mirr = get_float(member, &bytes_read, byte_index);
-                            }
-                            "mirg" => {
-                                mirg = get_float(member, &bytes_read, byte_index);
-                            }
-                            "mirb" => {
-                                mirb = get_float(member, &bytes_read, byte_index);
-                            }
-                            "emit" => {
-                                emit = get_float(member, &bytes_read, byte_index);
-                            }
-                            "ang" => {
-                                ang = get_float(member, &bytes_read, byte_index);
-                            }
-                            "ray_mirror" => {
-                                ray_mirror = get_float(member, &bytes_read, byte_index);
-                            }
-                            "roughness" => {
-                                roughness = get_float(member, &bytes_read, byte_index);
-                            }
-                            _ => {}
-                        }
-                        // find mem_type in dna_types.names
-                        if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
-                            let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
-                            byte_index += mem_tlen as usize;
-                        }
-                    }
-                    // Blend279Material
-                    let mat: Blend279Material = Blend279Material {
-                        r: r,
-                        g: g,
-                        b: b,
-                        a: 1.0,
-                        specr: specr,
-                        specg: specg,
-                        specb: specb,
-                        mirr: mirr,
-                        mirg: mirg,
-                        mirb: mirb,
-                        emit: emit,
-                        ang: ang,
-                        ray_mirror: ray_mirror,
-                        roughness: roughness,
-                    };
-                    println!("  mat[{:?}] = {:?}", base_name, mat);
-                    material_hm.insert(base_name.clone(), mat);
-                }
-                "Mesh" => {
-                    let mut totvert: i32 = 0;
-                    let mut totedge: i32 = 0;
-                    let mut totface: i32 = 0;
-                    let mut totselect: i32 = 0;
-                    let mut totpoly: i32 = 0;
-                    let mut totloop: i32 = 0;
-                    for member in &struct_found.members {
-                        match member.mem_name.as_str() {
-                            "id" => {
-                                let id: String = get_id_name(
-                                    member,
-                                    &bytes_read,
-                                    byte_index,
-                                    &dna_structs_hm,
-                                    &dna_types_hm,
-                                );
-                                println!("  ID.name = {:?}", id);
-                                base_name = id.clone();
-                            }
-                            "totvert" => {
-                                totvert = get_int(member, &bytes_read, byte_index);
-                                println!("  totvert = {:?}", totvert);
-                            }
-                            "totedge" => {
-                                totedge = get_int(member, &bytes_read, byte_index);
-                                println!("  totedge = {:?}", totedge);
-                            }
-                            "totface" => {
-                                totface = get_int(member, &bytes_read, byte_index);
-                                println!("  totface = {:?}", totface);
-                            }
-                            "totselect" => {
-                                totselect = get_int(member, &bytes_read, byte_index);
-                                println!("  totselect = {:?}", totselect);
-                            }
-                            "totpoly" => {
-                                totpoly = get_int(member, &bytes_read, byte_index);
-                                println!("  totpoly = {:?}", totpoly);
-                            }
-                            "totloop" => {
-                                totloop = get_int(member, &bytes_read, byte_index);
-                                println!("  totloop = {:?}", totloop);
-                            }
-                            _ => {}
-                        }
-                        // find mem_type in dna_types.names
-                        if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
-                            let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
-                            byte_index += mem_tlen as usize;
-                        }
-                    }
-                }
-                _ => {}
             }
+        } else {
+            byte_index += data_read[struct_index] as usize;
         }
+        struct_index += 1;
     }
     println!("byte_index = {}", byte_index);
     // WORK
