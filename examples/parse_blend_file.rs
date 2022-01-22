@@ -164,6 +164,19 @@ fn get_float(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> f32
     float_value
 }
 
+fn get_int(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> i32 {
+    let mut int_value: i32 = 0;
+    if member.mem_type.as_str() == "int" {
+        int_value += (bytes_read[byte_index] as i32) << 0;
+        int_value += (bytes_read[byte_index + 1] as i32) << 8;
+        int_value += (bytes_read[byte_index + 2] as i32) << 16;
+        int_value += (bytes_read[byte_index + 3] as i32) << 24;
+    } else {
+        println!("WARNING: \"int\" expected, {:?} found", member.mem_type);
+    }
+    int_value
+}
+
 fn get_matrix(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> [f32; 16] {
     let mut mat_values: [f32; 16] = [0.0_f32; 16];
     let mut skip_bytes: usize = 0;
@@ -2044,7 +2057,7 @@ fn main() -> std::io::Result<()> {
         "Camera".to_string(),
         // "Lamp".to_string(),
         "Material".to_string(),
-        // "Mesh".to_string(),
+        "Mesh".to_string(),
         // "MPoly".to_string(),
         // "MVert".to_string(),
         // "MLoop".to_string(),
@@ -2092,7 +2105,7 @@ fn main() -> std::io::Result<()> {
                                     &dna_types_hm,
                                 );
                                 println!("  ID.name = {:?}", id);
-				base_name = id.clone();
+                                base_name = id.clone();
                             }
                             "unit" => {
                                 if let Some(struct_found2) =
@@ -2141,7 +2154,7 @@ fn main() -> std::io::Result<()> {
                                     &dna_types_hm,
                                 );
                                 println!("  ID.name = {:?}", id);
-				base_name = id.clone();
+                                base_name = id.clone();
                             }
                             "obmat[4][4]" => {
                                 let obmat: [f32; 16] = get_matrix(member, &bytes_read, byte_index);
@@ -2193,7 +2206,7 @@ fn main() -> std::io::Result<()> {
                                     &dna_types_hm,
                                 );
                                 println!("  ID.name = {:?}", id);
-				base_name = id.clone();
+                                base_name = id.clone();
                             }
                             "lens" => {
                                 lens = get_float(member, &bytes_read, byte_index);
@@ -2252,7 +2265,7 @@ fn main() -> std::io::Result<()> {
                                     &dna_types_hm,
                                 );
                                 println!("  ID.name = {:?}", id);
-				base_name = id.clone();
+                                base_name = id.clone();
                             }
                             "r" => {
                                 r = get_float(member, &bytes_read, byte_index);
@@ -2320,6 +2333,59 @@ fn main() -> std::io::Result<()> {
                     };
                     println!("  mat[{:?}] = {:?}", base_name, mat);
                     material_hm.insert(base_name.clone(), mat);
+                }
+                "Mesh" => {
+                    let mut totvert: i32 = 0;
+                    let mut totedge: i32 = 0;
+                    let mut totface: i32 = 0;
+                    let mut totselect: i32 = 0;
+                    let mut totpoly: i32 = 0;
+                    let mut totloop: i32 = 0;
+                    for member in &struct_found.members {
+                        match member.mem_name.as_str() {
+                            "id" => {
+                                let id: String = get_id_name(
+                                    member,
+                                    &bytes_read,
+                                    byte_index,
+                                    &dna_structs_hm,
+                                    &dna_types_hm,
+                                );
+                                println!("  ID.name = {:?}", id);
+                                base_name = id.clone();
+                            }
+                            "totvert" => {
+                                totvert = get_int(member, &bytes_read, byte_index);
+                                println!("  totvert = {:?}", totvert);
+                            }
+                            "totedge" => {
+                                totedge = get_int(member, &bytes_read, byte_index);
+                                println!("  totedge = {:?}", totedge);
+                            }
+                            "totface" => {
+                                totface = get_int(member, &bytes_read, byte_index);
+                                println!("  totface = {:?}", totface);
+                            }
+                            "totselect" => {
+                                totselect = get_int(member, &bytes_read, byte_index);
+                                println!("  totselect = {:?}", totselect);
+                            }
+                            "totpoly" => {
+                                totpoly = get_int(member, &bytes_read, byte_index);
+                                println!("  totpoly = {:?}", totpoly);
+                            }
+                            "totloop" => {
+                                totloop = get_int(member, &bytes_read, byte_index);
+                                println!("  totloop = {:?}", totloop);
+                            }
+                            _ => {}
+                        }
+                        // find mem_type in dna_types.names
+                        if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                            let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                            byte_index += mem_tlen as usize;
+                        }
+                    }
                 }
                 _ => {}
             }
