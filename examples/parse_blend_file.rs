@@ -164,6 +164,22 @@ fn get_float(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> f32
     float_value
 }
 
+fn get_float3(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> [f32; 3] {
+    let mut float_values: [f32; 3] = [0.0; 3];
+    if member.mem_type.as_str() == "float" {
+        for i in 0..3 {
+            let mut float_buf: [u8; 4] = [0_u8; 4];
+            for i in 0..4 as usize {
+                float_buf[i] = bytes_read[byte_index + i];
+            }
+            float_values[i] = unsafe { mem::transmute(float_buf) };
+        }
+    } else {
+        println!("WARNING: \"float\" expected, {:?} found", member.mem_type);
+    }
+    float_values
+}
+
 fn get_int(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> i32 {
     let mut int_value: i32 = 0;
     if member.mem_type.as_str() == "int" {
@@ -186,6 +202,21 @@ fn get_short(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> i16
         println!("WARNING: \"short\" expected, {:?} found", member.mem_type);
     }
     short_value
+}
+
+fn get_short3(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> [i16; 3] {
+    let mut short_values: [i16; 3] = [0; 3];
+    if member.mem_type.as_str() == "short" {
+        for i in 0..3 {
+            let mut short_value: i16 = 0;
+            short_value += (bytes_read[byte_index] as i16) << 0;
+            short_value += (bytes_read[byte_index + 1] as i16) << 8;
+            short_values[i] = short_value;
+        }
+    } else {
+        println!("WARNING: \"short\" expected, {:?} found", member.mem_type);
+    }
+    short_values
 }
 
 fn get_matrix(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> [f32; 16] {
@@ -2491,24 +2522,6 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                         }
-                        // "MVert" => {
-                        //     // WORK
-                        //     let mut co: [f32; 3] = [0.0_f32; 3];
-                        //     for member in &struct_found.members {
-                        //         println!("{:?}", member);
-                        //         match member.mem_name.as_str() {
-                        //             //     "co" => {
-                        //             //         co = get_float3(member, &bytes_read, byte_index);
-                        //             //     }
-                        //             _ => {}
-                        //         }
-                        //         // find mem_type in dna_types.names
-                        //         if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
-                        //             let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
-                        //             byte_index += mem_tlen as usize;
-                        //         }
-                        //     }
-                        // }
                         _ => {
                             byte_index += data_read[struct_index] as usize;
                         }
@@ -2516,8 +2529,46 @@ fn main() -> std::io::Result<()> {
                 }
             } else {
                 let num_structs: u32 = data_read[struct_index] / (*tlen as u32);
-                println!("{} * {}", num_structs, struct_read);
-                byte_index += data_read[struct_index] as usize;
+                if let Some(struct_found) = dna_structs_hm.get(&struct_read) {
+                    match struct_read.as_str() {
+                        "MVert" => {
+                            // WORK
+                            for s in 0..num_structs {
+                                for member in &struct_found.members {
+                                    match member.mem_name.as_str() {
+                                        "co[3]" => {
+                                            let mut co: [f32; 3] = [0.0_f32; 3];
+                                            co = get_float3(member, &bytes_read, byte_index);
+                                            println!("  co[{}] = {:?}", s, co);
+                                        }
+                                        "no[3]" => {
+                                            let mut no: [i16; 3] = [0; 3];
+                                            no = get_short3(member, &bytes_read, byte_index);
+                                            // convert short values to floats
+                                            let factor: f32 = 1.0 / 32767.0;
+                                            let mut nof: [f32; 3] = [0.0; 3];
+                                            for i in 0..3 {
+                                                nof[i] = no[i] as f32 * factor;
+                                            }
+                                            println!("  no[{}] = {:?}", s, nof);
+                                        }
+                                        _ => {}
+                                    }
+                                    // find mem_type in dna_types.names
+                                    if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                        let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                        byte_index += mem_tlen as usize;
+                                    }
+                                }
+                            }
+                        }
+                        _ => {
+                            println!("{} * {}", num_structs, struct_read);
+                            byte_index += data_read[struct_index] as usize;
+                        }
+                    }
+                } else {
+                }
             }
         } else {
             byte_index += data_read[struct_index] as usize;
