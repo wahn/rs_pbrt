@@ -177,6 +177,17 @@ fn get_int(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> i32 {
     int_value
 }
 
+fn get_short(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> i16 {
+    let mut short_value: i16 = 0;
+    if member.mem_type.as_str() == "short" {
+        short_value += (bytes_read[byte_index] as i16) << 0;
+        short_value += (bytes_read[byte_index + 1] as i16) << 8;
+    } else {
+        println!("WARNING: \"short\" expected, {:?} found", member.mem_type);
+    }
+    short_value
+}
+
 fn get_matrix(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> [f32; 16] {
     let mut mat_values: [f32; 16] = [0.0_f32; 16];
     let mut skip_bytes: usize = 0;
@@ -2068,6 +2079,7 @@ fn main() -> std::io::Result<()> {
     // then use the DNA
     let mut material_hm: HashMap<String, Blend279Material> = HashMap::with_capacity(ob_count);
     let mut object_to_world_hm: HashMap<String, Transform> = HashMap::with_capacity(ob_count);
+    let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
     // use_dna(...)
     let mut bytes_read: Vec<u8> = Vec::with_capacity(num_bytes_read);
     let mut structs_read: Vec<String> = Vec::with_capacity(names.len());
@@ -2091,7 +2103,10 @@ fn main() -> std::io::Result<()> {
     let mut byte_index: usize = 0;
     let mut struct_index: usize = 0;
     for struct_read in structs_read {
-        println!("{} ({} - {})", struct_read, byte_index, data_read[struct_index]);
+        println!(
+            "{} ({} - {})",
+            struct_read, byte_index, data_read[struct_index]
+        );
         if let Some(tlen) = dna_types_hm.get(&struct_read) {
             if data_read[struct_index] == *tlen as u32 {
                 if let Some(struct_found) = dna_structs_hm.get(&struct_read) {
@@ -2108,7 +2123,7 @@ fn main() -> std::io::Result<()> {
                                             &dna_types_hm,
                                         );
                                         println!("  ID.name = {:?}", id);
-                                        base_name = id.clone();
+                                        base_name = id.clone()[2..].to_string();
                                     }
                                     "unit" => {
                                         if let Some(struct_found2) =
@@ -2157,7 +2172,7 @@ fn main() -> std::io::Result<()> {
                                             &dna_types_hm,
                                         );
                                         println!("  ID.name = {:?}", id);
-                                        base_name = id.clone();
+                                        base_name = id.clone()[2..].to_string();
                                     }
                                     "obmat[4][4]" => {
                                         let obmat: [f32; 16] =
@@ -2211,7 +2226,7 @@ fn main() -> std::io::Result<()> {
                                             &dna_types_hm,
                                         );
                                         println!("  ID.name = {:?}", id);
-                                        base_name = id.clone();
+                                        base_name = id.clone()[2..].to_string();
                                     }
                                     "lens" => {
                                         lens = get_float(member, &bytes_read, byte_index);
@@ -2244,6 +2259,90 @@ fn main() -> std::io::Result<()> {
                             };
                             println!("  {:?}", cam);
                             camera_hm.insert(base_name.clone(), cam);
+                        }
+                        "Lamp" => {
+                            let mut la_type: i16 = 0;
+                            let mut r: f32 = 0.0;
+                            let mut g: f32 = 0.0;
+                            let mut b: f32 = 0.0;
+                            let mut energy: f32 = 0.0;
+                            for member in &struct_found.members {
+                                match member.mem_name.as_str() {
+                                    "id" => {
+                                        let id: String = get_id_name(
+                                            member,
+                                            &bytes_read,
+                                            byte_index,
+                                            &dna_structs_hm,
+                                            &dna_types_hm,
+                                        );
+                                        println!("  ID.name = {:?}", id);
+                                        base_name = id.clone()[2..].to_string();
+                                    }
+                                    "type" => {
+                                        la_type = get_short(member, &bytes_read, byte_index);
+                                        println!("  type = {}", la_type);
+                                    }
+                                    "r" => {
+                                        r = get_float(member, &bytes_read, byte_index);
+                                    }
+                                    "g" => {
+                                        g = get_float(member, &bytes_read, byte_index);
+                                    }
+                                    "b" => {
+                                        b = get_float(member, &bytes_read, byte_index);
+                                    }
+                                    "energy" => {
+                                        energy = get_float(member, &bytes_read, byte_index);
+                                        println!("  energy = {}", energy);
+                                    }
+                                    _ => {}
+                                }
+                                // find mem_type in dna_types.names
+                                if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                    let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                    byte_index += mem_tlen as usize;
+                                }
+                            }
+                            if la_type == 0 {
+                                // LA_LOCAL
+                                if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                    object_to_world = *o2w;
+                                } else {
+                                    println!(
+                                        "WARNING: looking up object_to_world by name ({:?}) failed",
+                                        base_name
+                                    );
+                                }
+                                let l: Spectrum = Spectrum::rgb(r, g, b);
+                                println!("  l = {:?}", l);
+                                // point light
+                                builder.add_point_light(
+                                    object_to_world,
+                                    l,
+                                    args.light_scale * energy,
+                                );
+                            } else if la_type == 1 {
+                                // LA_SUN
+                                if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                    object_to_world = *o2w;
+                                } else {
+                                    println!(
+                                        "WARNING: looking up object_to_world by name ({:?}) failed",
+                                        base_name
+                                    );
+                                }
+                                let l: Spectrum = Spectrum::rgb(r, g, b);
+                                println!("  l = {:?}", l);
+                                // distant light
+                                builder.add_distant_light(
+                                    object_to_world,
+                                    l,
+                                    args.light_scale * energy,
+                                );
+                            } else {
+                                println!("WARNING: la_type = {} not supported (yet)", la_type);
+                            }
                         }
                         "Material" => {
                             let mut r: f32 = 0.0;
@@ -2411,8 +2510,8 @@ fn main() -> std::io::Result<()> {
                         //     }
                         // }
                         _ => {
-			    byte_index += data_read[struct_index] as usize;
-			}
+                            byte_index += data_read[struct_index] as usize;
+                        }
                     }
                 }
             } else {
