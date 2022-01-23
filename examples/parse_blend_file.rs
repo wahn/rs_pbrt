@@ -2522,6 +2522,33 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                         }
+                        "MPoly" => {
+                            for member in &struct_found.members {
+                                match member.mem_name.as_str() {
+                                    "loopstart" => {
+                                        let loopstart: i32 =
+                                            get_int(member, &bytes_read, byte_index);
+                                        println!("  loopstart = {:?}", loopstart);
+                                    }
+                                    "totloop" => {
+                                        let totloop: i32 = get_int(member, &bytes_read, byte_index);
+                                        println!("  totloop = {:?}", totloop);
+                                    }
+                                    "flag" => {
+                                        let flag: u8 = bytes_read[byte_index];
+                                        println!("  flag = {}", flag);
+                                        let is_smooth: bool = flag % 2 == 1;
+                                        println!("  is_smooth = {}", is_smooth);
+                                    }
+                                    _ => {}
+                                }
+                                // find mem_type in dna_types.names
+                                if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                    let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                    byte_index += mem_tlen as usize;
+                                }
+                            }
+                        }
                         _ => {
                             byte_index += data_read[struct_index] as usize;
                         }
@@ -2561,8 +2588,30 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                         }
-                        "MPoly" => {
+                        "MLoop" => {
                             // WORK
+                            for s in 0..num_structs {
+                                for member in &struct_found.members {
+                                    match member.mem_name.as_str() {
+                                        "v" => {
+                                            let v: i32 = get_int(member, &bytes_read, byte_index);
+                                            println!("  v[{}] = {:?}", s, v);
+                                        }
+                                        "e" => {
+                                            let e: i32 = get_int(member, &bytes_read, byte_index);
+                                            println!("  e[{}] = {:?}", s, e);
+                                        }
+                                        _ => {}
+                                    }
+                                    // find mem_type in dna_types.names
+                                    if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                        let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                        byte_index += mem_tlen as usize;
+                                    }
+                                }
+                            }
+                        }
+                        "MPoly" => {
                             for s in 0..num_structs {
                                 for member in &struct_found.members {
                                     match member.mem_name.as_str() {
@@ -2578,9 +2627,9 @@ fn main() -> std::io::Result<()> {
                                         }
                                         "flag" => {
                                             let flag: u8 = bytes_read[byte_index];
-                                            println!("  flag = {}", flag);
-					    let is_smooth: bool = flag % 2 == 1;
-                                            println!("  is_smooth = {}", is_smooth);
+                                            println!("  flag[{}] = {}", s, flag);
+                                            let is_smooth: bool = flag % 2 == 1;
+                                            println!("  is_smooth[{}] = {}", s, is_smooth);
                                         }
                                         _ => {}
                                     }
