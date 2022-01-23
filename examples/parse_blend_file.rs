@@ -2055,14 +2055,14 @@ fn main() -> std::io::Result<()> {
         "Scene".to_string(),
         "Object".to_string(),
         "Camera".to_string(),
-        // "Lamp".to_string(),
+        "Lamp".to_string(),
         "Material".to_string(),
         "Mesh".to_string(),
-        // "MPoly".to_string(),
+        "MPoly".to_string(),
         "MVert".to_string(),
-        // "MLoop".to_string(),
-        // "MLoopUV".to_string(),
-        // "MLoopCol".to_string(),
+        "MLoop".to_string(),
+        "MLoopUV".to_string(),
+        "MLoopCol".to_string(),
     ];
     // WORK
     // then use the DNA
@@ -2091,7 +2091,7 @@ fn main() -> std::io::Result<()> {
     let mut byte_index: usize = 0;
     let mut struct_index: usize = 0;
     for struct_read in structs_read {
-        println!("{} ({})", struct_read, byte_index);
+        println!("{} ({} - {})", struct_read, byte_index, data_read[struct_index]);
         if let Some(tlen) = dna_types_hm.get(&struct_read) {
             if data_read[struct_index] == *tlen as u32 {
                 if let Some(struct_found) = dna_structs_hm.get(&struct_read) {
@@ -2410,7 +2410,9 @@ fn main() -> std::io::Result<()> {
                         //         }
                         //     }
                         // }
-                        _ => {}
+                        _ => {
+			    byte_index += data_read[struct_index] as usize;
+			}
                     }
                 }
             } else {
