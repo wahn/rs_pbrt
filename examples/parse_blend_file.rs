@@ -2532,7 +2532,6 @@ fn main() -> std::io::Result<()> {
                 if let Some(struct_found) = dna_structs_hm.get(&struct_read) {
                     match struct_read.as_str() {
                         "MVert" => {
-                            // WORK
                             for s in 0..num_structs {
                                 for member in &struct_found.members {
                                     match member.mem_name.as_str() {
@@ -2551,6 +2550,37 @@ fn main() -> std::io::Result<()> {
                                                 nof[i] = no[i] as f32 * factor;
                                             }
                                             println!("  no[{}] = {:?}", s, nof);
+                                        }
+                                        _ => {}
+                                    }
+                                    // find mem_type in dna_types.names
+                                    if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                        let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                        byte_index += mem_tlen as usize;
+                                    }
+                                }
+                            }
+                        }
+                        "MPoly" => {
+                            // WORK
+                            for s in 0..num_structs {
+                                for member in &struct_found.members {
+                                    match member.mem_name.as_str() {
+                                        "loopstart" => {
+                                            let loopstart: i32 =
+                                                get_int(member, &bytes_read, byte_index);
+                                            println!("  loopstart[{}] = {:?}", s, loopstart);
+                                        }
+                                        "totloop" => {
+                                            let totloop: i32 =
+                                                get_int(member, &bytes_read, byte_index);
+                                            println!("  totloop[{}] = {:?}", s, totloop);
+                                        }
+                                        "flag" => {
+                                            let flag: u8 = bytes_read[byte_index];
+                                            println!("  flag = {}", flag);
+					    let is_smooth: bool = flag % 2 == 1;
+                                            println!("  is_smooth = {}", is_smooth);
                                         }
                                         _ => {}
                                     }
