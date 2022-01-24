@@ -2085,6 +2085,7 @@ fn main() -> std::io::Result<()> {
     let mut loops: Vec<u8> = Vec::with_capacity(1048576);
     let mut vertex_indices: Vec<u32> = Vec::with_capacity(1048576);
     let mut vertex_colors: Vec<u8> = Vec::with_capacity(1048576);
+    let mut loop_indices: Vec<i32> = Vec::with_capacity(4194304); // 2^22
     let mut prop_height: f64 = 0.0;
     let mut prop_radius: f64 = 1.0;
     let mut prop_innerradius: f64 = 0.0;
@@ -2125,10 +2126,6 @@ fn main() -> std::io::Result<()> {
     // WORK
     let verbose: bool = false;
     // then use the DNA
-    let mut material_hm: HashMap<String, Blend279Material> = HashMap::with_capacity(ob_count);
-    let mut object_to_world_hm: HashMap<String, Transform> = HashMap::with_capacity(ob_count);
-    let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
-    // use_dna(...)
     let mut bytes_read: Vec<u8> = Vec::with_capacity(num_bytes_read);
     let mut structs_read: Vec<String> = Vec::with_capacity(names.len());
     let mut data_read: Vec<u32> = Vec::with_capacity(names.len());
@@ -2148,6 +2145,13 @@ fn main() -> std::io::Result<()> {
         "TODO: Do something with the {} bytes returned by use_dna(...).",
         bytes_read.len()
     );
+    // store data for pbrt here
+    let mut material_hm: HashMap<String, Blend279Material> = HashMap::with_capacity(ob_count);
+    let mut object_to_world_hm: HashMap<String, Transform> = HashMap::with_capacity(ob_count);
+    let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
+    let mut data_following_mesh: bool = false;
+    let mut is_smooth: bool = false;
+    // structs_read
     let mut byte_index: usize = 0;
     let mut struct_index: usize = 0;
     for struct_read in structs_read {
@@ -2157,7 +2161,7 @@ fn main() -> std::io::Result<()> {
         );
         if let Some(tlen) = dna_types_hm.get(&struct_read) {
             if data_read[struct_index] == *tlen as u32 {
-		// single structs
+                // single structs
                 if let Some(struct_found) = dna_structs_hm.get(&struct_read) {
                     match struct_read.as_str() {
                         "Scene" => {
@@ -2171,9 +2175,9 @@ fn main() -> std::io::Result<()> {
                                             &dna_structs_hm,
                                             &dna_types_hm,
                                         );
-					if verbose {
+                                        if verbose {
                                             println!("  ID.name = {:?}", id);
-					}
+                                        }
                                         base_name = id.clone()[2..].to_string();
                                     }
                                     "unit" => {
@@ -2209,9 +2213,13 @@ fn main() -> std::io::Result<()> {
                                     byte_index += mem_tlen as usize;
                                 }
                             }
-			    if verbose {
-				println!("  scale_length = {}", scale_length);
-			    }
+                            if verbose {
+                                println!("  scale_length = {}", scale_length);
+                            }
+                            // reset booleans
+                            data_following_mesh = false;
+                            is_smooth = false;
+                            println!("data_following_mesh = {}", data_following_mesh);
                         }
                         "Object" => {
                             for member in &struct_found.members {
@@ -2224,18 +2232,18 @@ fn main() -> std::io::Result<()> {
                                             &dna_structs_hm,
                                             &dna_types_hm,
                                         );
-					if verbose {
+                                        if verbose {
                                             println!("  ID.name = {:?}", id);
-					}
+                                        }
                                         base_name = id.clone()[2..].to_string();
                                     }
                                     "obmat[4][4]" => {
                                         let obmat: [f32; 16] =
                                             get_matrix(member, &bytes_read, byte_index);
-					if verbose {
+                                        if verbose {
                                             println!("  obmat[4][4] = {:?}", obmat);
                                             println!("  scale_length = {}", scale_length);
-					}
+                                        }
                                         object_to_world = Transform::new(
                                             obmat[0],
                                             obmat[4],
@@ -2254,9 +2262,9 @@ fn main() -> std::io::Result<()> {
                                             obmat[11],
                                             obmat[15],
                                         );
-					if verbose {
+                                        if verbose {
                                             println!("  object_to_world = {:?}", object_to_world);
-					}
+                                        }
                                         object_to_world_hm
                                             .insert(base_name.clone(), object_to_world);
                                     }
@@ -2268,6 +2276,10 @@ fn main() -> std::io::Result<()> {
                                     byte_index += mem_tlen as usize;
                                 }
                             }
+                            // reset booleans
+                            data_following_mesh = false;
+                            is_smooth = false;
+                            println!("data_following_mesh = {}", data_following_mesh);
                         }
                         "Camera" => {
                             let mut lens: f32 = 0.0;
@@ -2284,9 +2296,9 @@ fn main() -> std::io::Result<()> {
                                             &dna_structs_hm,
                                             &dna_types_hm,
                                         );
-					if verbose {
+                                        if verbose {
                                             println!("  ID.name = {:?}", id);
-					}
+                                        }
                                         base_name = id.clone()[2..].to_string();
                                     }
                                     "lens" => {
@@ -2318,10 +2330,14 @@ fn main() -> std::io::Result<()> {
                                 angle_y,
                                 clipsta,
                             };
-			    if verbose {
-				println!("  {:?}", cam);
-			    }
+                            if verbose {
+                                println!("  {:?}", cam);
+                            }
                             camera_hm.insert(base_name.clone(), cam);
+                            // reset booleans
+                            data_following_mesh = false;
+                            is_smooth = false;
+                            println!("data_following_mesh = {}", data_following_mesh);
                         }
                         "Lamp" => {
                             let mut la_type: i16 = 0;
@@ -2339,16 +2355,16 @@ fn main() -> std::io::Result<()> {
                                             &dna_structs_hm,
                                             &dna_types_hm,
                                         );
-					if verbose {
+                                        if verbose {
                                             println!("  ID.name = {:?}", id);
-					}
+                                        }
                                         base_name = id.clone()[2..].to_string();
                                     }
                                     "type" => {
                                         la_type = get_short(member, &bytes_read, byte_index);
-					if verbose {
+                                        if verbose {
                                             println!("  type = {}", la_type);
-					}
+                                        }
                                     }
                                     "r" => {
                                         r = get_float(member, &bytes_read, byte_index);
@@ -2361,9 +2377,9 @@ fn main() -> std::io::Result<()> {
                                     }
                                     "energy" => {
                                         energy = get_float(member, &bytes_read, byte_index);
-					if verbose {
+                                        if verbose {
                                             println!("  energy = {}", energy);
-					}
+                                        }
                                     }
                                     _ => {}
                                 }
@@ -2384,9 +2400,9 @@ fn main() -> std::io::Result<()> {
                                     );
                                 }
                                 let l: Spectrum = Spectrum::rgb(r, g, b);
-				if verbose {
-				    println!("  l = {:?}", l);
-				}
+                                if verbose {
+                                    println!("  l = {:?}", l);
+                                }
                                 // point light
                                 builder.add_point_light(
                                     object_to_world,
@@ -2404,9 +2420,9 @@ fn main() -> std::io::Result<()> {
                                     );
                                 }
                                 let l: Spectrum = Spectrum::rgb(r, g, b);
-				if verbose {
+                                if verbose {
                                     println!("  l = {:?}", l);
-				}
+                                }
                                 // distant light
                                 builder.add_distant_light(
                                     object_to_world,
@@ -2416,8 +2432,51 @@ fn main() -> std::io::Result<()> {
                             } else {
                                 println!("WARNING: la_type = {} not supported (yet)", la_type);
                             }
+                            // reset booleans
+                            data_following_mesh = false;
+                            is_smooth = false;
+                            println!("data_following_mesh = {}", data_following_mesh);
                         }
                         "Material" => {
+                            if data_following_mesh {
+                                // time to use the gathered data to create a mesh
+                                let mut o2w_found_bool = false;
+                                if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                    o2w_found_bool = true;
+                                }
+                                println!("read_mesh(");
+                                println!("          {:?},", base_name);
+                                println!("          {:?},", o2w_found_bool);
+                                println!("          {:?} p,", p.len());
+                                println!("          {:?} n ,", n.len());
+                                println!("          {:?} uvs,", uvs.len());
+                                println!("          {:?} loops,", loops);
+                                println!("          {:?} vertex_indices,", vertex_indices.len());
+                                println!("          {:?} vertex_colors,", vertex_colors.len());
+                                println!("          {:?},", is_smooth);
+                                println!(");");
+                                read_mesh(
+                                    &base_name,
+                                    &object_to_world_hm,
+                                    &mut object_to_world,
+                                    &p,
+                                    &n,
+                                    &mut uvs,
+                                    &loops,
+                                    vertex_indices.clone(),
+                                    vertex_colors.clone(),
+                                    is_smooth,
+                                    &mut builder,
+                                );
+                                // clear all Vecs
+                                p.clear();
+                                n.clear();
+                                uvs.clear();
+                                loops.clear();
+                                vertex_indices.clear();
+                                vertex_colors.clear();
+                                loop_indices.clear();
+                            }
                             let mut r: f32 = 0.0;
                             let mut g: f32 = 0.0;
                             let mut b: f32 = 0.0;
@@ -2441,10 +2500,10 @@ fn main() -> std::io::Result<()> {
                                             &dna_structs_hm,
                                             &dna_types_hm,
                                         );
-					if verbose {
+                                        if verbose {
                                             println!("  ID.name = {:?}", id);
-					}
-                                        base_name = id.clone();
+                                        }
+                                        base_name = id.clone()[2..].to_string();
                                     }
                                     "r" => {
                                         r = get_float(member, &bytes_read, byte_index);
@@ -2510,12 +2569,55 @@ fn main() -> std::io::Result<()> {
                                 ray_mirror: ray_mirror,
                                 roughness: roughness,
                             };
-			    if verbose {
-				println!("  mat[{:?}] = {:?}", base_name, mat);
-			    }
+                            if verbose {
+                                println!("  mat[{:?}] = {:?}", base_name, mat);
+                            }
                             material_hm.insert(base_name.clone(), mat);
+                            // reset booleans
+                            data_following_mesh = false;
+                            is_smooth = false;
+                            println!("data_following_mesh = {}", data_following_mesh);
                         }
                         "Mesh" => {
+                            if data_following_mesh {
+                                // time to use the gathered data to create a mesh
+                                let mut o2w_found_bool = false;
+                                if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                    o2w_found_bool = true;
+                                }
+                                println!("read_mesh(");
+                                println!("          {:?},", base_name);
+                                println!("          {:?},", o2w_found_bool);
+                                println!("          {:?} p,", p.len());
+                                println!("          {:?} n ,", n.len());
+                                println!("          {:?} uvs,", uvs.len());
+                                println!("          {:?} loops,", loops);
+                                println!("          {:?} vertex_indices,", vertex_indices.len());
+                                println!("          {:?} vertex_colors,", vertex_colors.len());
+                                println!("          {:?},", is_smooth);
+                                println!(");");
+                                read_mesh(
+                                    &base_name,
+                                    &object_to_world_hm,
+                                    &mut object_to_world,
+                                    &p,
+                                    &n,
+                                    &mut uvs,
+                                    &loops,
+                                    vertex_indices.clone(),
+                                    vertex_colors.clone(),
+                                    is_smooth,
+                                    &mut builder,
+                                );
+                                // clear all Vecs
+                                p.clear();
+                                n.clear();
+                                uvs.clear();
+                                loops.clear();
+                                vertex_indices.clear();
+                                vertex_colors.clear();
+                                loop_indices.clear();
+                            }
                             let mut totvert: i32 = 0;
                             let mut totedge: i32 = 0;
                             let mut totface: i32 = 0;
@@ -2532,46 +2634,46 @@ fn main() -> std::io::Result<()> {
                                             &dna_structs_hm,
                                             &dna_types_hm,
                                         );
-					if verbose {
+                                        if !verbose {
                                             println!("  ID.name = {:?}", id);
-					}
-                                        base_name = id.clone();
+                                        }
+                                        base_name = id.clone()[2..].to_string();
                                     }
                                     "totvert" => {
                                         totvert = get_int(member, &bytes_read, byte_index);
-					if verbose {
+                                        if !verbose {
                                             println!("  totvert = {:?}", totvert);
-					}
+                                        }
                                     }
                                     "totedge" => {
                                         totedge = get_int(member, &bytes_read, byte_index);
-					if verbose {
+                                        if !verbose {
                                             println!("  totedge = {:?}", totedge);
-					}
+                                        }
                                     }
                                     "totface" => {
                                         totface = get_int(member, &bytes_read, byte_index);
-					if verbose {
+                                        if !verbose {
                                             println!("  totface = {:?}", totface);
-					}
+                                        }
                                     }
                                     "totselect" => {
                                         totselect = get_int(member, &bytes_read, byte_index);
-					if verbose {
+                                        if !verbose {
                                             println!("  totselect = {:?}", totselect);
-					}
+                                        }
                                     }
                                     "totpoly" => {
                                         totpoly = get_int(member, &bytes_read, byte_index);
-					if verbose {
+                                        if !verbose {
                                             println!("  totpoly = {:?}", totpoly);
-					}
+                                        }
                                     }
                                     "totloop" => {
                                         totloop = get_int(member, &bytes_read, byte_index);
-					if verbose {
+                                        if !verbose {
                                             println!("  totloop = {:?}", totloop);
-					}
+                                        }
                                     }
                                     _ => {}
                                 }
@@ -2581,32 +2683,35 @@ fn main() -> std::io::Result<()> {
                                     byte_index += mem_tlen as usize;
                                 }
                             }
+                            data_following_mesh = true;
+                            println!("data_following_mesh = {}", data_following_mesh);
                         }
                         "MPoly" => {
+                            let mut loopstart: i32 = 0;
+                            let mut totloop: i32 = 0;
                             for member in &struct_found.members {
                                 match member.mem_name.as_str() {
                                     "loopstart" => {
-                                        let loopstart: i32 =
-                                            get_int(member, &bytes_read, byte_index);
-					if verbose {
+                                        loopstart = get_int(member, &bytes_read, byte_index);
+                                        if verbose {
                                             println!("  loopstart = {:?}", loopstart);
-					}
+                                        }
                                     }
                                     "totloop" => {
-                                        let totloop: i32 = get_int(member, &bytes_read, byte_index);
-					if verbose {
+                                        totloop = get_int(member, &bytes_read, byte_index);
+                                        if verbose {
                                             println!("  totloop = {:?}", totloop);
-					}
+                                        }
                                     }
                                     "flag" => {
                                         let flag: u8 = bytes_read[byte_index];
-					if verbose {
+                                        if verbose {
                                             println!("  flag = {}", flag);
-					}
-                                        let is_smooth: bool = flag % 2 == 1;
-					if verbose {
+                                        }
+                                        is_smooth = flag % 2 == 1;
+                                        if verbose {
                                             println!("  is_smooth = {}", is_smooth);
-					}
+                                        }
                                     }
                                     _ => {}
                                 }
@@ -2615,6 +2720,28 @@ fn main() -> std::io::Result<()> {
                                     let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
                                     byte_index += mem_tlen as usize;
                                 }
+                            }
+                            if totloop == 3_i32 {
+                                loops.push(totloop as u8);
+                                // triangle
+                                for i in 0..3 {
+                                    vertex_indices
+                                        .push(loop_indices[(loopstart + i) as usize] as u32);
+                                }
+                            } else if totloop == 4_i32 {
+                                loops.push(totloop as u8);
+                                // quads
+                                vertex_indices.push(loop_indices[(loopstart + 0) as usize] as u32);
+                                vertex_indices.push(loop_indices[(loopstart + 1) as usize] as u32);
+                                vertex_indices.push(loop_indices[(loopstart + 2) as usize] as u32);
+                                vertex_indices.push(loop_indices[(loopstart + 0) as usize] as u32);
+                                vertex_indices.push(loop_indices[(loopstart + 2) as usize] as u32);
+                                vertex_indices.push(loop_indices[(loopstart + 3) as usize] as u32);
+                            } else {
+                                println!(
+                                    "WARNING: quads or triangles expected (totloop = {}): {:?}",
+                                    totloop, base_name
+                                )
                             }
                         }
                         _ => {
@@ -2623,7 +2750,7 @@ fn main() -> std::io::Result<()> {
                     }
                 }
             } else {
-		// several structs (from DATA chunk)
+                // several structs (from DATA chunk)
                 let num_structs: u32 = data_read[struct_index] / (*tlen as u32);
                 if let Some(struct_found) = dna_structs_hm.get(&struct_read) {
                     match struct_read.as_str() {
@@ -2634,9 +2761,14 @@ fn main() -> std::io::Result<()> {
                                         "co[3]" => {
                                             let mut co: [f32; 3] = [0.0_f32; 3];
                                             co = get_float3(member, &bytes_read, byte_index);
-					    if verbose {
-						println!("  co[{}] = {:?}", s, co);
-					    }
+                                            if verbose {
+                                                println!("  co[{}] = {:?}", s, co);
+                                            }
+                                            p.push(Point3f {
+                                                x: (co[0] * scale_length) as Float,
+                                                y: (co[1] * scale_length) as Float,
+                                                z: (co[2] * scale_length) as Float,
+                                            });
                                         }
                                         "no[3]" => {
                                             let mut no: [i16; 3] = [0; 3];
@@ -2647,9 +2779,14 @@ fn main() -> std::io::Result<()> {
                                             for i in 0..3 {
                                                 nof[i] = no[i] as f32 * factor;
                                             }
-					    if verbose {
-						println!("  no[{}] = {:?}", s, nof);
-					    }
+                                            if verbose {
+                                                println!("  no[{}] = {:?}", s, nof);
+                                            }
+                                            n.push(Normal3f {
+                                                x: nof[0] as Float,
+                                                y: nof[1] as Float,
+                                                z: nof[2] as Float,
+                                            });
                                         }
                                         _ => {}
                                     }
@@ -2667,15 +2804,16 @@ fn main() -> std::io::Result<()> {
                                     match member.mem_name.as_str() {
                                         "v" => {
                                             let v: i32 = get_int(member, &bytes_read, byte_index);
-					    if verbose {
-						println!("  v[{}] = {:?}", s, v);
-					    }
+                                            if verbose {
+                                                println!("  v[{}] = {:?}", s, v);
+                                            }
+                                            loop_indices.push(v);
                                         }
                                         "e" => {
                                             let e: i32 = get_int(member, &bytes_read, byte_index);
-					    if verbose {
-						println!("  e[{}] = {:?}", s, e);
-					    }
+                                            if verbose {
+                                                println!("  e[{}] = {:?}", s, e);
+                                            }
                                         }
                                         _ => {}
                                     }
@@ -2693,10 +2831,14 @@ fn main() -> std::io::Result<()> {
                                     match member.mem_name.as_str() {
                                         "uv[2]" => {
                                             let mut uv: [f32; 2] = [0.0; 2];
-					    uv = get_float2(member, &bytes_read, byte_index);
-					    if verbose {
-						println!("  uv[{}] = {:?}", s, uv);
-					    }
+                                            uv = get_float2(member, &bytes_read, byte_index);
+                                            if verbose {
+                                                println!("  uv[{}] = {:?}", s, uv);
+                                            }
+                                            uvs.push(Point2f {
+                                                x: uv[0] as Float,
+                                                y: uv[1] as Float,
+                                            });
                                         }
                                         _ => {}
                                     }
@@ -2710,31 +2852,31 @@ fn main() -> std::io::Result<()> {
                         }
                         "MPoly" => {
                             for s in 0..num_structs {
+                                let mut loopstart: i32 = 0;
+                                let mut totloop: i32 = 0;
                                 for member in &struct_found.members {
                                     match member.mem_name.as_str() {
                                         "loopstart" => {
-                                            let loopstart: i32 =
-                                                get_int(member, &bytes_read, byte_index);
-					    if verbose {
-						println!("  loopstart[{}] = {:?}", s, loopstart);
-					    }
+                                            loopstart = get_int(member, &bytes_read, byte_index);
+                                            if verbose {
+                                                println!("  loopstart[{}] = {:?}", s, loopstart);
+                                            }
                                         }
                                         "totloop" => {
-                                            let totloop: i32 =
-                                                get_int(member, &bytes_read, byte_index);
-					    if verbose {
-						println!("  totloop[{}] = {:?}", s, totloop);
-					    }
+                                            totloop = get_int(member, &bytes_read, byte_index);
+                                            if verbose {
+                                                println!("  totloop[{}] = {:?}", s, totloop);
+                                            }
                                         }
                                         "flag" => {
                                             let flag: u8 = bytes_read[byte_index];
-					    if verbose {
-						println!("  flag[{}] = {}", s, flag);
-					    }
-                                            let is_smooth: bool = flag % 2 == 1;
-					    if verbose {
-						println!("  is_smooth[{}] = {}", s, is_smooth);
-					    }
+                                            if verbose {
+                                                println!("  flag[{}] = {}", s, flag);
+                                            }
+                                            is_smooth = flag % 2 == 1;
+                                            if verbose {
+                                                println!("  is_smooth[{}] = {}", s, is_smooth);
+                                            }
                                         }
                                         _ => {}
                                     }
@@ -2743,6 +2885,34 @@ fn main() -> std::io::Result<()> {
                                         let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
                                         byte_index += mem_tlen as usize;
                                     }
+                                }
+                                if totloop == 3_i32 {
+                                    loops.push(totloop as u8);
+                                    // triangle
+                                    for i in 0..3 {
+                                        vertex_indices
+                                            .push(loop_indices[(loopstart + i) as usize] as u32);
+                                    }
+                                } else if totloop == 4_i32 {
+                                    loops.push(totloop as u8);
+                                    // quads
+                                    vertex_indices
+                                        .push(loop_indices[(loopstart + 0) as usize] as u32);
+                                    vertex_indices
+                                        .push(loop_indices[(loopstart + 1) as usize] as u32);
+                                    vertex_indices
+                                        .push(loop_indices[(loopstart + 2) as usize] as u32);
+                                    vertex_indices
+                                        .push(loop_indices[(loopstart + 0) as usize] as u32);
+                                    vertex_indices
+                                        .push(loop_indices[(loopstart + 2) as usize] as u32);
+                                    vertex_indices
+                                        .push(loop_indices[(loopstart + 3) as usize] as u32);
+                                } else {
+                                    println!(
+                                        "WARNING: quads or triangles expected (totloop = {}): {:?}",
+                                        totloop, base_name
+                                    )
                                 }
                             }
                         }
