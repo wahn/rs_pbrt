@@ -164,6 +164,22 @@ fn get_float(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> f32
     float_value
 }
 
+fn get_float2(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> [f32; 2] {
+    let mut float_values: [f32; 2] = [0.0; 2];
+    if member.mem_type.as_str() == "float" {
+        for i in 0..2 {
+            let mut float_buf: [u8; 4] = [0_u8; 4];
+            for i in 0..4 as usize {
+                float_buf[i] = bytes_read[byte_index + i];
+            }
+            float_values[i] = unsafe { mem::transmute(float_buf) };
+        }
+    } else {
+        println!("WARNING: \"float\" expected, {:?} found", member.mem_type);
+    }
+    float_values
+}
+
 fn get_float3(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> [f32; 3] {
     let mut float_values: [f32; 3] = [0.0; 3];
     if member.mem_type.as_str() == "float" {
@@ -2140,6 +2156,7 @@ fn main() -> std::io::Result<()> {
         );
         if let Some(tlen) = dna_types_hm.get(&struct_read) {
             if data_read[struct_index] == *tlen as u32 {
+		// single structs
                 if let Some(struct_found) = dna_structs_hm.get(&struct_read) {
                     match struct_read.as_str() {
                         "Scene" => {
@@ -2555,6 +2572,7 @@ fn main() -> std::io::Result<()> {
                     }
                 }
             } else {
+		// several structs (from DATA chunk)
                 let num_structs: u32 = data_read[struct_index] / (*tlen as u32);
                 if let Some(struct_found) = dna_structs_hm.get(&struct_read) {
                     match struct_read.as_str() {
@@ -2589,7 +2607,6 @@ fn main() -> std::io::Result<()> {
                             }
                         }
                         "MLoop" => {
-                            // WORK
                             for s in 0..num_structs {
                                 for member in &struct_found.members {
                                     match member.mem_name.as_str() {
@@ -2600,6 +2617,26 @@ fn main() -> std::io::Result<()> {
                                         "e" => {
                                             let e: i32 = get_int(member, &bytes_read, byte_index);
                                             println!("  e[{}] = {:?}", s, e);
+                                        }
+                                        _ => {}
+                                    }
+                                    // find mem_type in dna_types.names
+                                    if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                        let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                        byte_index += mem_tlen as usize;
+                                    }
+                                }
+                            }
+                        }
+                        "MLoopUV" => {
+                            // WORK
+                            for s in 0..num_structs {
+                                for member in &struct_found.members {
+                                    match member.mem_name.as_str() {
+                                        "uv[2]" => {
+                                            let mut uv: [f32; 2] = [0.0; 2];
+					    uv = get_float2(member, &bytes_read, byte_index);
+                                            println!("  uv[{}] = {:?}", s, uv);
                                         }
                                         _ => {}
                                     }
