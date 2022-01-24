@@ -2123,6 +2123,7 @@ fn main() -> std::io::Result<()> {
         "MLoopCol".to_string(),
     ];
     // WORK
+    let verbose: bool = false;
     // then use the DNA
     let mut material_hm: HashMap<String, Blend279Material> = HashMap::with_capacity(ob_count);
     let mut object_to_world_hm: HashMap<String, Transform> = HashMap::with_capacity(ob_count);
@@ -2170,7 +2171,9 @@ fn main() -> std::io::Result<()> {
                                             &dna_structs_hm,
                                             &dna_types_hm,
                                         );
-                                        println!("  ID.name = {:?}", id);
+					if verbose {
+                                            println!("  ID.name = {:?}", id);
+					}
                                         base_name = id.clone()[2..].to_string();
                                     }
                                     "unit" => {
@@ -2206,7 +2209,9 @@ fn main() -> std::io::Result<()> {
                                     byte_index += mem_tlen as usize;
                                 }
                             }
-                            println!("  scale_length = {}", scale_length);
+			    if verbose {
+				println!("  scale_length = {}", scale_length);
+			    }
                         }
                         "Object" => {
                             for member in &struct_found.members {
@@ -2219,14 +2224,18 @@ fn main() -> std::io::Result<()> {
                                             &dna_structs_hm,
                                             &dna_types_hm,
                                         );
-                                        println!("  ID.name = {:?}", id);
+					if verbose {
+                                            println!("  ID.name = {:?}", id);
+					}
                                         base_name = id.clone()[2..].to_string();
                                     }
                                     "obmat[4][4]" => {
                                         let obmat: [f32; 16] =
                                             get_matrix(member, &bytes_read, byte_index);
-                                        println!("  obmat[4][4] = {:?}", obmat);
-                                        println!("  scale_length = {}", scale_length);
+					if verbose {
+                                            println!("  obmat[4][4] = {:?}", obmat);
+                                            println!("  scale_length = {}", scale_length);
+					}
                                         object_to_world = Transform::new(
                                             obmat[0],
                                             obmat[4],
@@ -2245,7 +2254,9 @@ fn main() -> std::io::Result<()> {
                                             obmat[11],
                                             obmat[15],
                                         );
-                                        println!("  object_to_world = {:?}", object_to_world);
+					if verbose {
+                                            println!("  object_to_world = {:?}", object_to_world);
+					}
                                         object_to_world_hm
                                             .insert(base_name.clone(), object_to_world);
                                     }
@@ -2273,7 +2284,9 @@ fn main() -> std::io::Result<()> {
                                             &dna_structs_hm,
                                             &dna_types_hm,
                                         );
-                                        println!("  ID.name = {:?}", id);
+					if verbose {
+                                            println!("  ID.name = {:?}", id);
+					}
                                         base_name = id.clone()[2..].to_string();
                                     }
                                     "lens" => {
@@ -2305,7 +2318,9 @@ fn main() -> std::io::Result<()> {
                                 angle_y,
                                 clipsta,
                             };
-                            println!("  {:?}", cam);
+			    if verbose {
+				println!("  {:?}", cam);
+			    }
                             camera_hm.insert(base_name.clone(), cam);
                         }
                         "Lamp" => {
@@ -2324,12 +2339,16 @@ fn main() -> std::io::Result<()> {
                                             &dna_structs_hm,
                                             &dna_types_hm,
                                         );
-                                        println!("  ID.name = {:?}", id);
+					if verbose {
+                                            println!("  ID.name = {:?}", id);
+					}
                                         base_name = id.clone()[2..].to_string();
                                     }
                                     "type" => {
                                         la_type = get_short(member, &bytes_read, byte_index);
-                                        println!("  type = {}", la_type);
+					if verbose {
+                                            println!("  type = {}", la_type);
+					}
                                     }
                                     "r" => {
                                         r = get_float(member, &bytes_read, byte_index);
@@ -2342,7 +2361,9 @@ fn main() -> std::io::Result<()> {
                                     }
                                     "energy" => {
                                         energy = get_float(member, &bytes_read, byte_index);
-                                        println!("  energy = {}", energy);
+					if verbose {
+                                            println!("  energy = {}", energy);
+					}
                                     }
                                     _ => {}
                                 }
@@ -2363,7 +2384,9 @@ fn main() -> std::io::Result<()> {
                                     );
                                 }
                                 let l: Spectrum = Spectrum::rgb(r, g, b);
-                                println!("  l = {:?}", l);
+				if verbose {
+				    println!("  l = {:?}", l);
+				}
                                 // point light
                                 builder.add_point_light(
                                     object_to_world,
@@ -2381,7 +2404,9 @@ fn main() -> std::io::Result<()> {
                                     );
                                 }
                                 let l: Spectrum = Spectrum::rgb(r, g, b);
-                                println!("  l = {:?}", l);
+				if verbose {
+                                    println!("  l = {:?}", l);
+				}
                                 // distant light
                                 builder.add_distant_light(
                                     object_to_world,
@@ -2416,7 +2441,9 @@ fn main() -> std::io::Result<()> {
                                             &dna_structs_hm,
                                             &dna_types_hm,
                                         );
-                                        println!("  ID.name = {:?}", id);
+					if verbose {
+                                            println!("  ID.name = {:?}", id);
+					}
                                         base_name = id.clone();
                                     }
                                     "r" => {
@@ -2483,7 +2510,9 @@ fn main() -> std::io::Result<()> {
                                 ray_mirror: ray_mirror,
                                 roughness: roughness,
                             };
-                            println!("  mat[{:?}] = {:?}", base_name, mat);
+			    if verbose {
+				println!("  mat[{:?}] = {:?}", base_name, mat);
+			    }
                             material_hm.insert(base_name.clone(), mat);
                         }
                         "Mesh" => {
@@ -2503,32 +2532,46 @@ fn main() -> std::io::Result<()> {
                                             &dna_structs_hm,
                                             &dna_types_hm,
                                         );
-                                        println!("  ID.name = {:?}", id);
+					if verbose {
+                                            println!("  ID.name = {:?}", id);
+					}
                                         base_name = id.clone();
                                     }
                                     "totvert" => {
                                         totvert = get_int(member, &bytes_read, byte_index);
-                                        println!("  totvert = {:?}", totvert);
+					if verbose {
+                                            println!("  totvert = {:?}", totvert);
+					}
                                     }
                                     "totedge" => {
                                         totedge = get_int(member, &bytes_read, byte_index);
-                                        println!("  totedge = {:?}", totedge);
+					if verbose {
+                                            println!("  totedge = {:?}", totedge);
+					}
                                     }
                                     "totface" => {
                                         totface = get_int(member, &bytes_read, byte_index);
-                                        println!("  totface = {:?}", totface);
+					if verbose {
+                                            println!("  totface = {:?}", totface);
+					}
                                     }
                                     "totselect" => {
                                         totselect = get_int(member, &bytes_read, byte_index);
-                                        println!("  totselect = {:?}", totselect);
+					if verbose {
+                                            println!("  totselect = {:?}", totselect);
+					}
                                     }
                                     "totpoly" => {
                                         totpoly = get_int(member, &bytes_read, byte_index);
-                                        println!("  totpoly = {:?}", totpoly);
+					if verbose {
+                                            println!("  totpoly = {:?}", totpoly);
+					}
                                     }
                                     "totloop" => {
                                         totloop = get_int(member, &bytes_read, byte_index);
-                                        println!("  totloop = {:?}", totloop);
+					if verbose {
+                                            println!("  totloop = {:?}", totloop);
+					}
                                     }
                                     _ => {}
                                 }
@@ -2545,17 +2588,25 @@ fn main() -> std::io::Result<()> {
                                     "loopstart" => {
                                         let loopstart: i32 =
                                             get_int(member, &bytes_read, byte_index);
-                                        println!("  loopstart = {:?}", loopstart);
+					if verbose {
+                                            println!("  loopstart = {:?}", loopstart);
+					}
                                     }
                                     "totloop" => {
                                         let totloop: i32 = get_int(member, &bytes_read, byte_index);
-                                        println!("  totloop = {:?}", totloop);
+					if verbose {
+                                            println!("  totloop = {:?}", totloop);
+					}
                                     }
                                     "flag" => {
                                         let flag: u8 = bytes_read[byte_index];
-                                        println!("  flag = {}", flag);
+					if verbose {
+                                            println!("  flag = {}", flag);
+					}
                                         let is_smooth: bool = flag % 2 == 1;
-                                        println!("  is_smooth = {}", is_smooth);
+					if verbose {
+                                            println!("  is_smooth = {}", is_smooth);
+					}
                                     }
                                     _ => {}
                                 }
@@ -2583,7 +2634,9 @@ fn main() -> std::io::Result<()> {
                                         "co[3]" => {
                                             let mut co: [f32; 3] = [0.0_f32; 3];
                                             co = get_float3(member, &bytes_read, byte_index);
-                                            println!("  co[{}] = {:?}", s, co);
+					    if verbose {
+						println!("  co[{}] = {:?}", s, co);
+					    }
                                         }
                                         "no[3]" => {
                                             let mut no: [i16; 3] = [0; 3];
@@ -2594,7 +2647,9 @@ fn main() -> std::io::Result<()> {
                                             for i in 0..3 {
                                                 nof[i] = no[i] as f32 * factor;
                                             }
-                                            println!("  no[{}] = {:?}", s, nof);
+					    if verbose {
+						println!("  no[{}] = {:?}", s, nof);
+					    }
                                         }
                                         _ => {}
                                     }
@@ -2612,11 +2667,15 @@ fn main() -> std::io::Result<()> {
                                     match member.mem_name.as_str() {
                                         "v" => {
                                             let v: i32 = get_int(member, &bytes_read, byte_index);
-                                            println!("  v[{}] = {:?}", s, v);
+					    if verbose {
+						println!("  v[{}] = {:?}", s, v);
+					    }
                                         }
                                         "e" => {
                                             let e: i32 = get_int(member, &bytes_read, byte_index);
-                                            println!("  e[{}] = {:?}", s, e);
+					    if verbose {
+						println!("  e[{}] = {:?}", s, e);
+					    }
                                         }
                                         _ => {}
                                     }
@@ -2629,14 +2688,15 @@ fn main() -> std::io::Result<()> {
                             }
                         }
                         "MLoopUV" => {
-                            // WORK
                             for s in 0..num_structs {
                                 for member in &struct_found.members {
                                     match member.mem_name.as_str() {
                                         "uv[2]" => {
                                             let mut uv: [f32; 2] = [0.0; 2];
 					    uv = get_float2(member, &bytes_read, byte_index);
-                                            println!("  uv[{}] = {:?}", s, uv);
+					    if verbose {
+						println!("  uv[{}] = {:?}", s, uv);
+					    }
                                         }
                                         _ => {}
                                     }
@@ -2655,18 +2715,26 @@ fn main() -> std::io::Result<()> {
                                         "loopstart" => {
                                             let loopstart: i32 =
                                                 get_int(member, &bytes_read, byte_index);
-                                            println!("  loopstart[{}] = {:?}", s, loopstart);
+					    if verbose {
+						println!("  loopstart[{}] = {:?}", s, loopstart);
+					    }
                                         }
                                         "totloop" => {
                                             let totloop: i32 =
                                                 get_int(member, &bytes_read, byte_index);
-                                            println!("  totloop[{}] = {:?}", s, totloop);
+					    if verbose {
+						println!("  totloop[{}] = {:?}", s, totloop);
+					    }
                                         }
                                         "flag" => {
                                             let flag: u8 = bytes_read[byte_index];
-                                            println!("  flag[{}] = {}", s, flag);
+					    if verbose {
+						println!("  flag[{}] = {}", s, flag);
+					    }
                                             let is_smooth: bool = flag % 2 == 1;
-                                            println!("  is_smooth[{}] = {}", s, is_smooth);
+					    if verbose {
+						println!("  is_smooth[{}] = {}", s, is_smooth);
+					    }
                                         }
                                         _ => {}
                                     }
@@ -2694,258 +2762,9 @@ fn main() -> std::io::Result<()> {
     println!("byte_index = {}", byte_index);
     // WORK
 
-    // // first get the DNA
-    // let mut names: Vec<String> = Vec::new();
-    // let mut names_len: usize = 0;
-    // let mut types: Vec<String> = Vec::new();
-    // let mut dna_2_type_id: Vec<u16> = Vec::new();
-    // let mut types_len: usize = 0;
-    // let mut tlen: Vec<u16> = Vec::new();
-    // {
-    //     let mut f = File::open(&args.path)?;
-    //     // read exactly 12 bytes
-    //     // let mut counter: usize = 0;
-    //     let mut buffer = [0; 12];
-    //     f.read(&mut buffer)?;
-    //     // counter += 12;
-    //     let mut blender_version: u32 = 0;
-    //     if !decode_blender_header(&buffer, &mut blender_version, true) {
-    //         println!("ERROR: Not a .blend file");
-    //         println!("First 12 bytes:");
-    //         println!("{:?}", buffer);
-    //     } else {
-    //         loop {
-    //             // code
-    //             let mut buffer = [0; 4];
-    //             f.read(&mut buffer)?;
-    //             // counter += 4;
-    //             let code = make_id(&buffer);
-    //             // len
-    //             let mut buffer = [0; 4];
-    //             f.read(&mut buffer)?;
-    //             // counter += 4;
-    //             let mut len: u32 = 0;
-    //             len += (buffer[0] as u32) << 0;
-    //             len += (buffer[1] as u32) << 8;
-    //             len += (buffer[2] as u32) << 16;
-    //             len += (buffer[3] as u32) << 24;
-    //             // for now ignore the old entry
-    //             let mut buffer = [0; 8];
-    //             f.read(&mut buffer)?;
-    //             // counter += 8;
-    //             // get SDNAnr
-    //             let mut buffer = [0; 4];
-    //             f.read(&mut buffer)?;
-    //             // counter += 4;
-    //             // for now ignore the nr entry
-    //             let mut buffer = [0; 4];
-    //             f.read(&mut buffer)?;
-    //             // counter += 4;
-    //             // are we done?
-    //             if code == String::from("ENDB") {
-    //                 break;
-    //             }
-    //             if code == String::from("DNA1") {
-    //                 // println!("{} ({})", code, len);
-    //                 // "SDNANAME" in first 8 bytes
-    //                 let mut buffer = [0; 8];
-    //                 f.read(&mut buffer)?;
-    //                 // counter += 8;
-    //                 let mut sdna_name = String::with_capacity(8);
-    //                 for i in 0..8 {
-    //                     if (buffer[i] as char).is_ascii_alphabetic() {
-    //                         sdna_name.push(buffer[i] as char);
-    //                     }
-    //                 }
-    //                 if sdna_name != String::from("SDNANAME") {
-    //                     // read remaining bytes
-    //                     let mut buffer = vec![0; (len - 8) as usize];
-    //                     f.read(&mut buffer)?;
-    //                 // counter += (len - 8) as usize;
-    //                 } else {
-    //                     let mut buffer = [0; 4];
-    //                     f.read(&mut buffer)?;
-    //                     // counter += 4;
-    //                     let mut nr_names: u32 = 0;
-    //                     nr_names += (buffer[0] as u32) << 0;
-    //                     nr_names += (buffer[1] as u32) << 8;
-    //                     nr_names += (buffer[2] as u32) << 16;
-    //                     nr_names += (buffer[3] as u32) << 24;
-    //                     read_names(&mut f, nr_names as usize, &mut names, &mut names_len)?;
-    //                     // counter += names_len;
-    //                     let mut remaining_bytes: usize = (len - 12) as usize - names_len;
-    //                     // skip pad bytes, read "TYPE" and nr_types
-    //                     let mut buffer = [0; 1];
-    //                     loop {
-    //                         f.read(&mut buffer)?;
-    //                         // counter += 1;
-    //                         if buffer[0] == 0 {
-    //                             // skip pad byte
-    //                             remaining_bytes -= 1;
-    //                         } else if buffer[0] as char == 'T' {
-    //                             remaining_bytes -= 1;
-    //                             break;
-    //                         }
-    //                     }
-    //                     // match 'YPE' ('T' was matched above)
-    //                     let mut buffer = [0; 3];
-    //                     f.read(&mut buffer)?;
-    //                     // counter += 3;
-    //                     remaining_bytes -= 3;
-    //                     if buffer[0] as char == 'Y'
-    //                         && buffer[1] as char == 'P'
-    //                         && buffer[2] as char == 'E'
-    //                     {
-    //                         // nr_types
-    //                         let mut buffer = [0; 4];
-    //                         f.read(&mut buffer)?;
-    //                         // counter += 4;
-    //                         remaining_bytes -= 4;
-    //                         let mut nr_types: u32 = 0;
-    //                         nr_types += (buffer[0] as u32) << 0;
-    //                         nr_types += (buffer[1] as u32) << 8;
-    //                         nr_types += (buffer[2] as u32) << 16;
-    //                         nr_types += (buffer[3] as u32) << 24;
-    //                         read_type_names(&mut f, nr_types as usize, &mut types, &mut types_len)?;
-    //                         // counter += types_len;
-    //                         remaining_bytes -= types_len;
-    //                         // skip pad bytes, read "TLEN"
-    //                         let mut buffer = [0; 1];
-    //                         loop {
-    //                             f.read(&mut buffer)?;
-    //                             // counter += 1;
-    //                             if buffer[0] == 0 {
-    //                                 // skip pad byte
-    //                                 remaining_bytes -= 1;
-    //                             } else if buffer[0] as char == 'T' {
-    //                                 remaining_bytes -= 1;
-    //                                 break;
-    //                             }
-    //                         }
-    //                         // match 'LEN' ('T' was matched above)
-    //                         let mut buffer = [0; 3];
-    //                         f.read(&mut buffer)?;
-    //                         // counter += 3;
-    //                         remaining_bytes -= 3;
-    //                         if buffer[0] as char == 'L'
-    //                             && buffer[1] as char == 'E'
-    //                             && buffer[2] as char == 'N'
-    //                         {
-    //                             // read short (16 bits = 2 bytes) for each type
-    //                             for _i in 0..nr_types as usize {
-    //                                 let mut buffer = [0; 2];
-    //                                 f.read(&mut buffer)?;
-    //                                 // counter += 2;
-    //                                 remaining_bytes -= 2;
-    //                                 let mut type_size: u16 = 0;
-    //                                 type_size += (buffer[0] as u16) << 0;
-    //                                 type_size += (buffer[1] as u16) << 8;
-    //                                 tlen.push(type_size);
-    //                             }
-    //                             // skip pad bytes, read "STRC"
-    //                             let mut buffer = [0; 1];
-    //                             loop {
-    //                                 f.read(&mut buffer)?;
-    //                                 // counter += 1;
-    //                                 if buffer[0] == 0 {
-    //                                     // skip pad byte
-    //                                     remaining_bytes -= 1;
-    //                                 } else if buffer[0] as char == 'S' {
-    //                                     remaining_bytes -= 1;
-    //                                     break;
-    //                                 }
-    //                             }
-    //                             // match 'TRC' ('S' was matched above)
-    //                             let mut buffer = [0; 3];
-    //                             f.read(&mut buffer)?;
-    //                             // counter += 3;
-    //                             remaining_bytes -= 3;
-    //                             if buffer[0] as char == 'T'
-    //                                 && buffer[1] as char == 'R'
-    //                                 && buffer[2] as char == 'C'
-    //                             {
-    //                                 // nr_structs
-    //                                 let mut buffer = [0; 4];
-    //                                 f.read(&mut buffer)?;
-    //                                 // counter += 4;
-    //                                 remaining_bytes -= 4;
-    //                                 let mut nr_structs: u32 = 0;
-    //                                 nr_structs += (buffer[0] as u32) << 0;
-    //                                 nr_structs += (buffer[1] as u32) << 8;
-    //                                 nr_structs += (buffer[2] as u32) << 16;
-    //                                 nr_structs += (buffer[3] as u32) << 24;
-    //                                 for _s in 0..nr_structs as usize {
-    //                                     // read two short values
-    //                                     let mut buffer = [0; 2];
-    //                                     f.read(&mut buffer)?;
-    //                                     // counter += 2;
-    //                                     remaining_bytes -= 2;
-    //                                     let mut type_idx: u16 = 0;
-    //                                     type_idx += (buffer[0] as u16) << 0;
-    //                                     type_idx += (buffer[1] as u16) << 8;
-    //                                     f.read(&mut buffer)?;
-    //                                     // counter += 2;
-    //                                     remaining_bytes -= 2;
-    //                                     let mut short2: u16 = 0;
-    //                                     short2 += (buffer[0] as u16) << 0;
-    //                                     short2 += (buffer[1] as u16) << 8;
-    //                                     dna_2_type_id.push(type_idx);
-    //                                     let tuple_counter: usize = short2 as usize;
-    //                                     for _t in 0..tuple_counter {
-    //                                         // read two short values
-    //                                         let mut buffer = [0; 2];
-    //                                         f.read(&mut buffer)?;
-    //                                         // counter += 2;
-    //                                         remaining_bytes -= 2;
-    //                                         f.read(&mut buffer)?;
-    //                                         // counter += 2;
-    //                                         remaining_bytes -= 2;
-    //                                     }
-    //                                 }
-    //                             } else {
-    //                                 println!("ERROR: \"STRC\" expected, \"S\"{:?} found", buffer)
-    //                             }
-    //                         } else {
-    //                             println!("ERROR: \"TLEN\" expected, \"T\"{:?} found", buffer)
-    //                         }
-    //                     } else {
-    //                         println!("ERROR: \"TYPE\" expected, \"T\"{:?} found", buffer)
-    //                     }
-    //                     // read remaining bytes
-    //                     let mut buffer = vec![0; remaining_bytes];
-    //                     f.read(&mut buffer)?;
-    //                     // counter += remaining_bytes;
-    //                 }
-    //             } else {
-    //                 // read len bytes
-    //                 let mut buffer = vec![0; len as usize];
-    //                 f.read(&mut buffer)?;
-    //                 // counter += len as usize;
-    //                 if code == String::from("OB") {
-    //                     ob_count += 1;
-    //                 }
-    //             }
-    //         }
-    //         // println!("{} bytes read", counter);
-    //     }
-    // }
     // // then use the DNA
-    // let mut material_hm: HashMap<String, Blend279Material> = HashMap::with_capacity(ob_count);
-    // let mut object_to_world_hm: HashMap<String, Transform> = HashMap::with_capacity(ob_count);
-    // let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
     // {
-    //     let mut f = File::open(&args.path)?;
-    //     let parent = args.path.parent().unwrap();
-    //     // read exactly 12 bytes
-    //     let mut counter: usize = 0;
-    //     let mut buffer = [0; 12];
-    //     f.read(&mut buffer)?;
-    //     counter += 12;
-    //     let mut blender_version: u32 = 0;
     //     if !decode_blender_header(&buffer, &mut blender_version, false) {
-    //         println!("ERROR: Not a .blend file");
-    //         println!("First 12 bytes:");
-    //         println!("{:?}", buffer);
     //     } else {
     //         let mut data_following_mesh: bool = false;
     //         let mut data_following_object: bool = false;
@@ -4986,6 +4805,8 @@ fn main() -> std::io::Result<()> {
     //         println!("{} bytes read", counter);
     //     }
     // }
+
+    // TODO
     // // use HDR image if one was found
     // if !hdr_path.is_empty() {
     //     let axis: Vector3f = Vector3f {
