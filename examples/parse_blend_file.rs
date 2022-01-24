@@ -23,7 +23,10 @@ use std::mem;
 use std::path::Path;
 use std::sync::Arc;
 // others
-use blend_info::{calc_mem_tlen, read_dna, use_dna, DnaStrC, DnaStrMember};
+use blend_info::{
+    calc_mem_tlen, get_float, get_float2, get_float3, get_id_name, get_int, get_matrix, get_short,
+    get_short3, read_dna, use_dna, DnaStrC, DnaStrMember,
+};
 // pbrt
 use rs_pbrt::core::api::{make_accelerator, make_camera, make_film, make_filter, make_sampler};
 use rs_pbrt::core::camera::Camera;
@@ -109,147 +112,6 @@ struct Cli {
     /// The path to the file to read
     #[structopt(parse(from_os_str))]
     path: std::path::PathBuf,
-}
-
-// blend_info
-
-fn get_id_name(
-    member: &DnaStrMember,
-    bytes_read: &[u8],
-    byte_index: usize,
-    dna_structs_hm: &HashMap<String, DnaStrC>,
-    dna_types_hm: &HashMap<String, u16>,
-) -> String {
-    let mut return_str: String = String::new();
-    if let Some(struct_found2) = dna_structs_hm.get(member.mem_type.as_str()) {
-        let mut byte_index2: usize = 0;
-        for member2 in &struct_found2.members {
-            if let Some(type_found2) = dna_types_hm.get(&member2.mem_type) {
-                let mem_tlen2: u16 = calc_mem_tlen(member2, *type_found2);
-                if member2.mem_name.contains("name") {
-                    let mut id = String::with_capacity(mem_tlen2 as usize);
-                    for i in 0..mem_tlen2 as usize {
-                        if bytes_read[byte_index + byte_index2 + i] == 0 {
-                            break;
-                        }
-                        if (bytes_read[byte_index + byte_index2 + i] as char)
-                            .is_ascii_alphanumeric()
-                        {
-                            id.push(bytes_read[byte_index + byte_index2 + i] as char);
-                        }
-                    }
-                    // this will be returned
-                    return_str = id;
-                    byte_index2 += mem_tlen2 as usize;
-                } else {
-                    byte_index2 += mem_tlen2 as usize;
-                }
-            }
-        }
-    }
-    return_str
-}
-
-fn get_float(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> f32 {
-    let mut float_value: f32 = 0.0;
-    if member.mem_type.as_str() == "float" {
-        let mut float_buf: [u8; 4] = [0_u8; 4];
-        for i in 0..4 as usize {
-            float_buf[i] = bytes_read[byte_index + i];
-        }
-        float_value = unsafe { mem::transmute(float_buf) };
-    } else {
-        println!("WARNING: \"float\" expected, {:?} found", member.mem_type);
-    }
-    float_value
-}
-
-fn get_float2(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> [f32; 2] {
-    let mut float_values: [f32; 2] = [0.0; 2];
-    if member.mem_type.as_str() == "float" {
-        for i in 0..2 {
-            let mut float_buf: [u8; 4] = [0_u8; 4];
-            for i in 0..4 as usize {
-                float_buf[i] = bytes_read[byte_index + i];
-            }
-            float_values[i] = unsafe { mem::transmute(float_buf) };
-        }
-    } else {
-        println!("WARNING: \"float\" expected, {:?} found", member.mem_type);
-    }
-    float_values
-}
-
-fn get_float3(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> [f32; 3] {
-    let mut float_values: [f32; 3] = [0.0; 3];
-    if member.mem_type.as_str() == "float" {
-        for i in 0..3 {
-            let mut float_buf: [u8; 4] = [0_u8; 4];
-            for i in 0..4 as usize {
-                float_buf[i] = bytes_read[byte_index + i];
-            }
-            float_values[i] = unsafe { mem::transmute(float_buf) };
-        }
-    } else {
-        println!("WARNING: \"float\" expected, {:?} found", member.mem_type);
-    }
-    float_values
-}
-
-fn get_int(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> i32 {
-    let mut int_value: i32 = 0;
-    if member.mem_type.as_str() == "int" {
-        int_value += (bytes_read[byte_index] as i32) << 0;
-        int_value += (bytes_read[byte_index + 1] as i32) << 8;
-        int_value += (bytes_read[byte_index + 2] as i32) << 16;
-        int_value += (bytes_read[byte_index + 3] as i32) << 24;
-    } else {
-        println!("WARNING: \"int\" expected, {:?} found", member.mem_type);
-    }
-    int_value
-}
-
-fn get_short(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> i16 {
-    let mut short_value: i16 = 0;
-    if member.mem_type.as_str() == "short" {
-        short_value += (bytes_read[byte_index] as i16) << 0;
-        short_value += (bytes_read[byte_index + 1] as i16) << 8;
-    } else {
-        println!("WARNING: \"short\" expected, {:?} found", member.mem_type);
-    }
-    short_value
-}
-
-fn get_short3(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> [i16; 3] {
-    let mut short_values: [i16; 3] = [0; 3];
-    if member.mem_type.as_str() == "short" {
-        for i in 0..3 {
-            let mut short_value: i16 = 0;
-            short_value += (bytes_read[byte_index] as i16) << 0;
-            short_value += (bytes_read[byte_index + 1] as i16) << 8;
-            short_values[i] = short_value;
-        }
-    } else {
-        println!("WARNING: \"short\" expected, {:?} found", member.mem_type);
-    }
-    short_values
-}
-
-fn get_matrix(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> [f32; 16] {
-    let mut mat_values: [f32; 16] = [0.0_f32; 16];
-    let mut skip_bytes: usize = 0;
-    for i in 0..4 {
-        for j in 0..4 {
-            let mut mat_buf: [u8; 4] = [0_u8; 4];
-            for b in 0..4 as usize {
-                mat_buf[b] = bytes_read[byte_index + skip_bytes + b];
-            }
-            let mat: f32 = unsafe { mem::transmute(mat_buf) };
-            mat_values[i * 4 + j] = mat;
-            skip_bytes += 4;
-        }
-    }
-    mat_values
 }
 
 // PBRT
