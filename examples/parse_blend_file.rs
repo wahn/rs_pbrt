@@ -4977,203 +4977,203 @@ fn main() -> std::io::Result<()> {
     // }
 
     // TODO
-    // // use HDR image if one was found
-    // if !hdr_path.is_empty() {
-    //     let axis: Vector3f = Vector3f {
-    //         x: 0.0 as Float,
-    //         y: 0.0 as Float,
-    //         z: 1.0 as Float,
-    //     };
-    //     let light_to_world: Transform = Transform::rotate(180.0 as Float, &axis);
-    //     builder.add_hdr_light(
-    //         light_to_world,
-    //         String::from(hdr_path.to_str().unwrap()),
-    //         args.light_scale,
-    //     );
-    // }
-    // let scene_description: SceneDescription = builder.finalize();
-    // let mut render_options: RenderOptions = RenderOptions::new(
-    //     scene_description,
-    //     &material_hm,
-    //     &texture_hm,
-    //     args.light_scale as Float,
-    // );
-    // assert!(render_options.shapes.len() == render_options.shape_lights.len());
-    // for shape_idx in 0..render_options.shapes.len() {
-    //     let shape = &render_options.shapes[shape_idx];
-    //     let shape_material = &render_options.shape_materials[shape_idx];
-    //     let shape_light = &render_options.shape_lights[shape_idx];
-    //     let geo_prim = Arc::new(Primitive::Geometric(Box::new(GeometricPrimitive::new(
-    //         shape.clone(),
-    //         Some(shape_material.clone()),
-    //         shape_light.clone(),
-    //         None,
-    //     ))));
-    //     render_options.primitives.push(geo_prim.clone());
-    // }
-    // println!("number of lights = {:?}", render_options.lights.len());
-    // println!(
-    //     "number of primitives = {:?}",
-    //     render_options.primitives.len()
-    // );
-    // let mut pos = Point3f {
-    //     x: 0.0,
-    //     y: 0.0,
-    //     z: 0.0,
-    // };
-    // let mut look = Point3f {
-    //     x: 1.0,
-    //     y: 0.0,
-    //     z: 0.0,
-    // };
-    // let mut up = Vector3f {
-    //     x: 0.0,
-    //     y: 0.0,
-    //     z: 1.0,
-    // };
-    // base_name = String::from("Camera");
-    // if let Some(camera_name) = args.camera_name {
-    //     base_name = camera_name.clone();
-    // }
-    // if let Some(o2w) = object_to_world_hm.get(&base_name) {
-    //     pos = Point3f {
-    //         x: o2w.m.m[0][3],
-    //         y: o2w.m.m[1][3],
-    //         z: o2w.m.m[2][3],
-    //     };
-    //     let forwards: Point3f = Point3f {
-    //         x: -o2w.m.m[0][2] * scale_length,
-    //         y: -o2w.m.m[1][2] * scale_length,
-    //         z: -o2w.m.m[2][2] * scale_length,
-    //     };
-    //     look = pos + forwards;
-    //     up = Vector3f {
-    //         x: o2w.m.m[0][1],
-    //         y: o2w.m.m[1][1],
-    //         z: o2w.m.m[2][1],
-    //     };
-    // } else {
-    //     println!(
-    //         "WARNING: looking up object_to_world by name ({:?}) failed",
-    //         base_name
-    //     );
-    // }
-    // let t: Transform = Transform::scale(-1.0, 1.0, 1.0) * Transform::look_at(&pos, &look, &up);
-    // let it: Transform = Transform {
-    //     m: t.m_inv.clone(),
-    //     m_inv: t.m.clone(),
-    // };
-    // let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
-    // let aspect: Float = resolution_x as Float / resolution_y as Float;
-    // let mut fov: Float;
-    // let mut clipsta: Float = 0.0;
-    // if aspect > 1.0 {
-    //     fov = angle_y;
-    // } else {
-    //     fov = angle_x;
-    // }
-    // if let Some(cam) = camera_hm.get(&base_name) {
-    //     // overwrite fov
-    //     if aspect > 1.0 {
-    //         // fov = angle_x / 2.0;
-    //         fov = 2.0 as Float * degrees((16.0 as Float / (aspect * cam.lens)).atan());
-    //     } else {
-    //         fov = 2.0 as Float * degrees(((aspect * 16.0 as Float) / cam.lens).atan());
-    //     }
-    //     clipsta = cam.clipsta;
-    //     // println!("fov[{}] overwritten", fov);
-    //     // println!("clipsta[{}] overwritten", clipsta);
-    // }
-    // let frame: Float = resolution_x as Float / resolution_y as Float;
-    // let mut screen: Bounds2f = Bounds2f::default();
-    // if frame > 1.0 {
-    //     screen.p_min.x = -frame;
-    //     screen.p_max.x = frame;
-    //     screen.p_min.y = -1.0;
-    //     screen.p_max.y = 1.0;
-    // } else {
-    //     screen.p_min.x = -1.0;
-    //     screen.p_max.x = 1.0;
-    //     screen.p_min.y = -1.0 / frame;
-    //     screen.p_max.y = 1.0 / frame;
-    // }
-    // let render_x: u32 = resolution_x * resolution_percentage as u32 / 100_u32;
-    // let render_y: u32 = resolution_y * resolution_percentage as u32 / 100_u32;
-    // println!(
-    //     "{}x{} [{}%] = {}x{}",
-    //     resolution_x, resolution_y, resolution_percentage, render_x, render_y
-    // );
-    // if let Some(integrator_name) = args.integrator {
-    //     let mut integrator_params: ParamSet = ParamSet::default();
-    //     if integrator_name == "mlt" {
-    //         integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
-    //         // MLT
-    //         integrator_params.add_int(
-    //             String::from("bootstrapsamples"),
-    //             args.bootstrap_samples as i32,
-    //         );
-    //         integrator_params.add_int(String::from("chains"), args.chains as i32);
-    //         integrator_params.add_int(
-    //             String::from("mutationsperpixel"),
-    //             args.mutations_per_pixel as i32,
-    //         );
-    //         integrator_params.add_float(
-    //             String::from("largestepprobability"),
-    //             args.step_probability as Float,
-    //         );
-    //         integrator_params.add_float(String::from("sigma"), args.sigma as Float);
-    //     } else if integrator_name == "sppm" {
-    //         integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
-    //         // SPPM
-    //         integrator_params.add_int(String::from("imagewritefrequency"), args.write_frequency);
-    //     } else {
-    //         integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
-    //     }
-    //     let some_integrator: Option<Box<Integrator>> = make_integrator(
-    //         &integrator_name,
-    //         2.0 as Float,
-    //         render_x as i32,
-    //         render_y as i32,
-    //         fov,
-    //         clipsta,
-    //         animated_cam_to_world,
-    //         args.samples as i32,
-    //         integrator_params,
-    //     );
-    //     if let Some(mut integrator) = some_integrator {
-    //         let scene = make_scene(&render_options.primitives, render_options.lights);
-    //         let num_threads: u8 = num_cpus::get() as u8;
-    //         integrator.render(&scene, num_threads);
-    //     } else {
-    //         panic!("Unable to create integrator.");
-    //     }
-    // } else {
-    //     let mut integrator_params: ParamSet = ParamSet::default();
-    //     integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
-    //     let integrator_name: String;
-    //     if render_options.has_emitters {
-    //         integrator_name = String::from("path");
-    //     } else {
-    //         integrator_name = String::from("ao");
-    //     }
-    //     let some_integrator: Option<Box<Integrator>> = make_integrator(
-    //         &integrator_name,
-    //         2.0 as Float,
-    //         render_x as i32,
-    //         render_y as i32,
-    //         fov,
-    //         clipsta,
-    //         animated_cam_to_world,
-    //         args.samples as i32,
-    //         integrator_params,
-    //     );
-    //     if let Some(mut integrator) = some_integrator {
-    //         let scene = make_scene(&render_options.primitives, render_options.lights);
-    //         let num_threads: u8 = num_cpus::get() as u8;
-    //         integrator.render(&scene, num_threads);
-    //     } else {
-    //         panic!("Unable to create integrator.");
-    //     }
-    // }
+    // use HDR image if one was found
+    if !hdr_path.is_empty() {
+        let axis: Vector3f = Vector3f {
+            x: 0.0 as Float,
+            y: 0.0 as Float,
+            z: 1.0 as Float,
+        };
+        let light_to_world: Transform = Transform::rotate(180.0 as Float, &axis);
+        builder.add_hdr_light(
+            light_to_world,
+            String::from(hdr_path.to_str().unwrap()),
+            args.light_scale,
+        );
+    }
+    let scene_description: SceneDescription = builder.finalize();
+    let mut render_options: RenderOptions = RenderOptions::new(
+        scene_description,
+        &material_hm,
+        &texture_hm,
+        args.light_scale as Float,
+    );
+    assert!(render_options.shapes.len() == render_options.shape_lights.len());
+    for shape_idx in 0..render_options.shapes.len() {
+        let shape = &render_options.shapes[shape_idx];
+        let shape_material = &render_options.shape_materials[shape_idx];
+        let shape_light = &render_options.shape_lights[shape_idx];
+        let geo_prim = Arc::new(Primitive::Geometric(Box::new(GeometricPrimitive::new(
+            shape.clone(),
+            Some(shape_material.clone()),
+            shape_light.clone(),
+            None,
+        ))));
+        render_options.primitives.push(geo_prim.clone());
+    }
+    println!("number of lights = {:?}", render_options.lights.len());
+    println!(
+        "number of primitives = {:?}",
+        render_options.primitives.len()
+    );
+    let mut pos = Point3f {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+    };
+    let mut look = Point3f {
+        x: 1.0,
+        y: 0.0,
+        z: 0.0,
+    };
+    let mut up = Vector3f {
+        x: 0.0,
+        y: 0.0,
+        z: 1.0,
+    };
+    base_name = String::from("Camera");
+    if let Some(camera_name) = args.camera_name {
+        base_name = camera_name.clone();
+    }
+    if let Some(o2w) = object_to_world_hm.get(&base_name) {
+        pos = Point3f {
+            x: o2w.m.m[0][3],
+            y: o2w.m.m[1][3],
+            z: o2w.m.m[2][3],
+        };
+        let forwards: Point3f = Point3f {
+            x: -o2w.m.m[0][2] * scale_length,
+            y: -o2w.m.m[1][2] * scale_length,
+            z: -o2w.m.m[2][2] * scale_length,
+        };
+        look = pos + forwards;
+        up = Vector3f {
+            x: o2w.m.m[0][1],
+            y: o2w.m.m[1][1],
+            z: o2w.m.m[2][1],
+        };
+    } else {
+        println!(
+            "WARNING: looking up object_to_world by name ({:?}) failed",
+            base_name
+        );
+    }
+    let t: Transform = Transform::scale(-1.0, 1.0, 1.0) * Transform::look_at(&pos, &look, &up);
+    let it: Transform = Transform {
+        m: t.m_inv.clone(),
+        m_inv: t.m.clone(),
+    };
+    let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
+    let aspect: Float = resolution_x as Float / resolution_y as Float;
+    let mut fov: Float;
+    let mut clipsta: Float = 0.0;
+    if aspect > 1.0 {
+        fov = angle_y;
+    } else {
+        fov = angle_x;
+    }
+    if let Some(cam) = camera_hm.get(&base_name) {
+        // overwrite fov
+        if aspect > 1.0 {
+            // fov = angle_x / 2.0;
+            fov = 2.0 as Float * degrees((16.0 as Float / (aspect * cam.lens)).atan());
+        } else {
+            fov = 2.0 as Float * degrees(((aspect * 16.0 as Float) / cam.lens).atan());
+        }
+        clipsta = cam.clipsta;
+        // println!("fov[{}] overwritten", fov);
+        // println!("clipsta[{}] overwritten", clipsta);
+    }
+    let frame: Float = resolution_x as Float / resolution_y as Float;
+    let mut screen: Bounds2f = Bounds2f::default();
+    if frame > 1.0 {
+        screen.p_min.x = -frame;
+        screen.p_max.x = frame;
+        screen.p_min.y = -1.0;
+        screen.p_max.y = 1.0;
+    } else {
+        screen.p_min.x = -1.0;
+        screen.p_max.x = 1.0;
+        screen.p_min.y = -1.0 / frame;
+        screen.p_max.y = 1.0 / frame;
+    }
+    let render_x: u32 = resolution_x * resolution_percentage as u32 / 100_u32;
+    let render_y: u32 = resolution_y * resolution_percentage as u32 / 100_u32;
+    println!(
+        "{}x{} [{}%] = {}x{}",
+        resolution_x, resolution_y, resolution_percentage, render_x, render_y
+    );
+    if let Some(integrator_name) = args.integrator {
+        let mut integrator_params: ParamSet = ParamSet::default();
+        if integrator_name == "mlt" {
+            integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
+            // MLT
+            integrator_params.add_int(
+                String::from("bootstrapsamples"),
+                args.bootstrap_samples as i32,
+            );
+            integrator_params.add_int(String::from("chains"), args.chains as i32);
+            integrator_params.add_int(
+                String::from("mutationsperpixel"),
+                args.mutations_per_pixel as i32,
+            );
+            integrator_params.add_float(
+                String::from("largestepprobability"),
+                args.step_probability as Float,
+            );
+            integrator_params.add_float(String::from("sigma"), args.sigma as Float);
+        } else if integrator_name == "sppm" {
+            integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
+            // SPPM
+            integrator_params.add_int(String::from("imagewritefrequency"), args.write_frequency);
+        } else {
+            integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
+        }
+        let some_integrator: Option<Box<Integrator>> = make_integrator(
+            &integrator_name,
+            2.0 as Float,
+            render_x as i32,
+            render_y as i32,
+            fov,
+            clipsta,
+            animated_cam_to_world,
+            args.samples as i32,
+            integrator_params,
+        );
+        if let Some(mut integrator) = some_integrator {
+            let scene = make_scene(&render_options.primitives, render_options.lights);
+            let num_threads: u8 = num_cpus::get() as u8;
+            integrator.render(&scene, num_threads);
+        } else {
+            panic!("Unable to create integrator.");
+        }
+    } else {
+        let mut integrator_params: ParamSet = ParamSet::default();
+        integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
+        let integrator_name: String;
+        if render_options.has_emitters {
+            integrator_name = String::from("path");
+        } else {
+            integrator_name = String::from("ao");
+        }
+        let some_integrator: Option<Box<Integrator>> = make_integrator(
+            &integrator_name,
+            2.0 as Float,
+            render_x as i32,
+            render_y as i32,
+            fov,
+            clipsta,
+            animated_cam_to_world,
+            args.samples as i32,
+            integrator_params,
+        );
+        if let Some(mut integrator) = some_integrator {
+            let scene = make_scene(&render_options.primitives, render_options.lights);
+            let num_threads: u8 = num_cpus::get() as u8;
+            integrator.render(&scene, num_threads);
+        } else {
+            panic!("Unable to create integrator.");
+        }
+    }
     Ok(())
 }
