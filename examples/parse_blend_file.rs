@@ -19,13 +19,11 @@ use std::convert::TryInto;
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::Read;
-use std::mem;
-use std::path::Path;
 use std::sync::Arc;
 // others
 use blend_info::{
     calc_mem_tlen, get_float, get_float2, get_float3, get_id_name, get_int, get_matrix, get_short,
-    get_short3, read_dna, use_dna, DnaStrC, DnaStrMember,
+    get_short3, read_dna, use_dna, DnaStrC,
 };
 // pbrt
 use rs_pbrt::core::api::{make_accelerator, make_camera, make_film, make_filter, make_sampler};
@@ -1934,9 +1932,9 @@ fn main() -> std::io::Result<()> {
     let mut base_name = String::new();
     let mut camera_hm: HashMap<String, BlendCamera> = HashMap::new();
     let mut texture_hm: HashMap<String, OsString> = HashMap::new();
-    let mut spheres_hm: HashMap<String, PbrtSphere> = HashMap::new();
-    let mut cylinders_hm: HashMap<String, PbrtCylinder> = HashMap::new();
-    let mut disks_hm: HashMap<String, PbrtDisk> = HashMap::new();
+    // let mut spheres_hm: HashMap<String, PbrtSphere> = HashMap::new();
+    // let mut cylinders_hm: HashMap<String, PbrtCylinder> = HashMap::new();
+    // let mut disks_hm: HashMap<String, PbrtDisk> = HashMap::new();
     let mut ob_count: usize = 0;
     let mut object_to_world: Transform = Transform::new(
         1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
@@ -1948,12 +1946,12 @@ fn main() -> std::io::Result<()> {
     let mut vertex_indices: Vec<u32> = Vec::with_capacity(1048576);
     let mut vertex_colors: Vec<u8> = Vec::with_capacity(1048576);
     let mut loop_indices: Vec<i32> = Vec::with_capacity(4194304); // 2^22
-    let mut prop_height: f64 = 0.0;
-    let mut prop_radius: f64 = 1.0;
-    let mut prop_innerradius: f64 = 0.0;
-    let mut prop_zmin: f64 = -1.0;
-    let mut prop_zmax: f64 = 1.0;
-    let mut prop_phimax: f64 = 360.0;
+                                                                  // let mut prop_height: f64 = 0.0;
+                                                                  // let mut prop_radius: f64 = 1.0;
+                                                                  // let mut prop_innerradius: f64 = 0.0;
+                                                                  // let mut prop_zmin: f64 = -1.0;
+                                                                  // let mut prop_zmax: f64 = 1.0;
+                                                                  // let mut prop_phimax: f64 = 360.0;
     let mut hdr_path: OsString = OsString::new();
     // read DNA
     let mut dna_types_hm: HashMap<String, u16> = HashMap::new();
@@ -2053,7 +2051,13 @@ fn main() -> std::io::Result<()> {
                                                 {
                                                     let mem_tlen2: u16 =
                                                         calc_mem_tlen(member2, *type_found2);
-                                                    if member2.mem_name.contains("xsch") {
+                                                    if member2.mem_name.contains("size") {
+                                                        resolution_percentage = get_short(
+                                                            member,
+                                                            &bytes_read,
+                                                            byte_index,
+                                                        ) as u16;
+                                                    } else if member2.mem_name.contains("xsch") {
                                                         let xsch = get_int(
                                                             member2,
                                                             &bytes_read,
@@ -2061,7 +2065,7 @@ fn main() -> std::io::Result<()> {
                                                         );
                                                         resolution_x = xsch as u32;
                                                         byte_index2 += mem_tlen2 as usize;
-						    } else if member2.mem_name.contains("ysch") {
+                                                    } else if member2.mem_name.contains("ysch") {
                                                         let ysch = get_int(
                                                             member2,
                                                             &bytes_read,
@@ -2336,21 +2340,6 @@ fn main() -> std::io::Result<()> {
                         "Material" => {
                             if data_following_mesh {
                                 // time to use the gathered data to create a mesh
-                                let mut o2w_found_bool = false;
-                                if let Some(o2w) = object_to_world_hm.get(&base_name) {
-                                    o2w_found_bool = true;
-                                }
-                                println!("read_mesh(");
-                                println!("          {:?},", base_name);
-                                println!("          {:?},", o2w_found_bool);
-                                println!("          {:?} p,", p.len());
-                                println!("          {:?} n ,", n.len());
-                                println!("          {:?} uvs,", uvs.len());
-                                println!("          {:?} loops,", loops);
-                                println!("          {:?} vertex_indices,", vertex_indices.len());
-                                println!("          {:?} vertex_colors,", vertex_colors.len());
-                                println!("          {:?},", is_smooth);
-                                println!(");");
                                 read_mesh(
                                     &base_name,
                                     &object_to_world_hm,
@@ -2477,21 +2466,6 @@ fn main() -> std::io::Result<()> {
                         "Mesh" => {
                             if data_following_mesh {
                                 // time to use the gathered data to create a mesh
-                                let mut o2w_found_bool = false;
-                                if let Some(o2w) = object_to_world_hm.get(&base_name) {
-                                    o2w_found_bool = true;
-                                }
-                                println!("read_mesh(");
-                                println!("          {:?},", base_name);
-                                println!("          {:?},", o2w_found_bool);
-                                println!("          {:?} p,", p.len());
-                                println!("          {:?} n ,", n.len());
-                                println!("          {:?} uvs,", uvs.len());
-                                println!("          {:?} loops,", loops);
-                                println!("          {:?} vertex_indices,", vertex_indices.len());
-                                println!("          {:?} vertex_colors,", vertex_colors.len());
-                                println!("          {:?},", is_smooth);
-                                println!(");");
                                 read_mesh(
                                     &base_name,
                                     &object_to_world_hm,
@@ -2514,12 +2488,12 @@ fn main() -> std::io::Result<()> {
                                 vertex_colors.clear();
                                 loop_indices.clear();
                             }
-                            let mut totvert: i32 = 0;
-                            let mut totedge: i32 = 0;
-                            let mut totface: i32 = 0;
-                            let mut totselect: i32 = 0;
-                            let mut totpoly: i32 = 0;
-                            let mut totloop: i32 = 0;
+                            let mut totvert: i32;
+                            let mut totedge: i32;
+                            let mut totface: i32;
+                            let mut totselect: i32;
+                            let mut totpoly: i32;
+                            let mut totloop: i32;
                             for member in &struct_found.members {
                                 match member.mem_name.as_str() {
                                     "id" => {
@@ -2655,8 +2629,8 @@ fn main() -> std::io::Result<()> {
                                 for member in &struct_found.members {
                                     match member.mem_name.as_str() {
                                         "co[3]" => {
-                                            let mut co: [f32; 3] = [0.0_f32; 3];
-                                            co = get_float3(member, &bytes_read, byte_index);
+                                            let co: [f32; 3] =
+                                                get_float3(member, &bytes_read, byte_index);
                                             if verbose {
                                                 println!("  co[{}] = {:?}", s, co);
                                             }
@@ -2667,8 +2641,8 @@ fn main() -> std::io::Result<()> {
                                             });
                                         }
                                         "no[3]" => {
-                                            let mut no: [i16; 3] = [0; 3];
-                                            no = get_short3(member, &bytes_read, byte_index);
+                                            let mut no: [i16; 3] =
+                                                get_short3(member, &bytes_read, byte_index);
                                             // convert short values to floats
                                             let factor: f32 = 1.0 / 32767.0;
                                             let mut nof: [f32; 3] = [0.0; 3];
@@ -2726,8 +2700,8 @@ fn main() -> std::io::Result<()> {
                                 for member in &struct_found.members {
                                     match member.mem_name.as_str() {
                                         "uv[2]" => {
-                                            let mut uv: [f32; 2] = [0.0; 2];
-                                            uv = get_float2(member, &bytes_read, byte_index);
+                                            let mut uv: [f32; 2] =
+                                                get_float2(member, &bytes_read, byte_index);
                                             if verbose {
                                                 println!("  uv[{}] = {:?}", s, uv);
                                             }
