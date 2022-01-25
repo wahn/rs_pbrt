@@ -2042,6 +2042,40 @@ fn main() -> std::io::Result<()> {
                                         }
                                         base_name = id.clone()[2..].to_string();
                                     }
+                                    "r" => {
+                                        if let Some(struct_found2) =
+                                            dna_structs_hm.get(member.mem_type.as_str())
+                                        {
+                                            let mut byte_index2: usize = 0;
+                                            for member2 in &struct_found2.members {
+                                                if let Some(type_found2) =
+                                                    dna_types_hm.get(&member2.mem_type)
+                                                {
+                                                    let mem_tlen2: u16 =
+                                                        calc_mem_tlen(member2, *type_found2);
+                                                    if member2.mem_name.contains("xsch") {
+                                                        let xsch = get_int(
+                                                            member2,
+                                                            &bytes_read,
+                                                            byte_index + byte_index2,
+                                                        );
+                                                        resolution_x = xsch as u32;
+                                                        byte_index2 += mem_tlen2 as usize;
+						    } else if member2.mem_name.contains("ysch") {
+                                                        let ysch = get_int(
+                                                            member2,
+                                                            &bytes_read,
+                                                            byte_index + byte_index2,
+                                                        );
+                                                        resolution_y = ysch as u32;
+                                                        byte_index2 += mem_tlen2 as usize;
+                                                    } else {
+                                                        byte_index2 += mem_tlen2 as usize;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                     "unit" => {
                                         if let Some(struct_found2) =
                                             dna_structs_hm.get(member.mem_type.as_str())
