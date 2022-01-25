@@ -17,8 +17,7 @@ use structopt::StructOpt;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::ffi::OsString;
-use std::fs::File;
-use std::io::Read;
+use std::path::Path;
 use std::sync::Arc;
 // others
 use blend_info::{
@@ -61,9 +60,9 @@ use rs_pbrt::materials::matte::MatteMaterial;
 use rs_pbrt::materials::metal::MetalMaterial;
 use rs_pbrt::materials::metal::{COPPER_K, COPPER_N, COPPER_SAMPLES, COPPER_WAVELENGTHS};
 use rs_pbrt::materials::mirror::MirrorMaterial;
-use rs_pbrt::shapes::cylinder::Cylinder;
-use rs_pbrt::shapes::disk::Disk;
-use rs_pbrt::shapes::sphere::Sphere;
+// use rs_pbrt::shapes::cylinder::Cylinder;
+// use rs_pbrt::shapes::disk::Disk;
+// use rs_pbrt::shapes::sphere::Sphere;
 use rs_pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use rs_pbrt::textures::constant::ConstantTexture;
 use rs_pbrt::textures::imagemap::convert_to_spectrum;
@@ -114,70 +113,70 @@ struct Cli {
 
 // PBRT
 
-#[derive(Debug, Default, Copy, Clone)]
-struct PbrtSphere {
-    pub radius: f32,
-    pub zmin: f32,
-    pub zmax: f32,
-    pub phimax: f32,
-}
+// #[derive(Debug, Default, Copy, Clone)]
+// struct PbrtSphere {
+//     pub radius: f32,
+//     pub zmin: f32,
+//     pub zmax: f32,
+//     pub phimax: f32,
+// }
 
-impl PbrtSphere {
-    fn new(radius: f32, zmin: f32, zmax: f32, phimax: f32) -> Self {
-        PbrtSphere {
-            radius,
-            zmin,
-            zmax,
-            phimax,
-        }
-    }
-}
+// impl PbrtSphere {
+//     fn new(radius: f32, zmin: f32, zmax: f32, phimax: f32) -> Self {
+//         PbrtSphere {
+//             radius,
+//             zmin,
+//             zmax,
+//             phimax,
+//         }
+//     }
+// }
 
-#[derive(Debug, Default, Copy, Clone)]
-struct PbrtCylinder {
-    pub radius: f32,
-    pub zmin: f32,
-    pub zmax: f32,
-    pub phimax: f32,
-}
+// #[derive(Debug, Default, Copy, Clone)]
+// struct PbrtCylinder {
+//     pub radius: f32,
+//     pub zmin: f32,
+//     pub zmax: f32,
+//     pub phimax: f32,
+// }
 
-impl PbrtCylinder {
-    fn new(radius: f32, zmin: f32, zmax: f32, phimax: f32) -> Self {
-        PbrtCylinder {
-            radius,
-            zmin,
-            zmax,
-            phimax,
-        }
-    }
-}
+// impl PbrtCylinder {
+//     fn new(radius: f32, zmin: f32, zmax: f32, phimax: f32) -> Self {
+//         PbrtCylinder {
+//             radius,
+//             zmin,
+//             zmax,
+//             phimax,
+//         }
+//     }
+// }
 
-#[derive(Debug, Default, Copy, Clone)]
-struct PbrtDisk {
-    pub height: f32,
-    pub radius: f32,
-    pub innerradius: f32,
-    pub phimax: f32,
-}
+// #[derive(Debug, Default, Copy, Clone)]
+// struct PbrtDisk {
+//     pub height: f32,
+//     pub radius: f32,
+//     pub innerradius: f32,
+//     pub phimax: f32,
+// }
 
-impl PbrtDisk {
-    fn new(height: f32, radius: f32, innerradius: f32, phimax: f32) -> Self {
-        PbrtDisk {
-            height,
-            radius,
-            innerradius,
-            phimax,
-        }
-    }
-}
+// impl PbrtDisk {
+//     fn new(height: f32, radius: f32, innerradius: f32, phimax: f32) -> Self {
+//         PbrtDisk {
+//             height,
+//             radius,
+//             innerradius,
+//             phimax,
+//         }
+//     }
+// }
 
 // Blender
 
 #[derive(Debug, Default, Copy, Clone)]
 struct BlendCamera {
     pub lens: f32,
-    pub angle_x: f32,
-    pub angle_y: f32,
+    // pub angle_x: f32,
+    // pub angle_y: f32,
     pub clipsta: f32,
 }
 
@@ -186,7 +185,7 @@ struct Blend279Material {
     pub r: f32,
     pub g: f32,
     pub b: f32,
-    pub a: f32,
+    // pub a: f32,
     pub specr: f32,
     pub specg: f32,
     pub specb: f32,
@@ -289,75 +288,75 @@ impl SceneDescriptionBuilder {
         self.triangle_colors.push(triangle_colors);
         self
     }
-    fn add_cylinder(
-        &mut self,
-        base_name: String,
-        object_to_world: Transform,
-        world_to_object: Transform,
-        radius: Float,
-        z_min: Float,
-        z_max: Float,
-        phi_max: Float,
-    ) -> &mut SceneDescriptionBuilder {
-        self.cylinder_names.push(base_name);
-        let cylinder = Arc::new(Shape::Clndr(Cylinder::new(
-            object_to_world,
-            world_to_object,
-            false,
-            radius,
-            z_min,
-            z_max,
-            phi_max,
-        )));
-        self.cylinders.push(cylinder);
-        self
-    }
-    fn add_disk(
-        &mut self,
-        base_name: String,
-        object_to_world: Transform,
-        world_to_object: Transform,
-        height: Float,
-        radius: Float,
-        inner_radius: Float,
-        phi_max: Float,
-    ) -> &mut SceneDescriptionBuilder {
-        self.disk_names.push(base_name);
-        let disk = Arc::new(Shape::Dsk(Disk::new(
-            object_to_world,
-            world_to_object,
-            false,
-            height,
-            radius,
-            inner_radius,
-            phi_max,
-        )));
-        self.disks.push(disk);
-        self
-    }
-    fn add_sphere(
-        &mut self,
-        base_name: String,
-        object_to_world: Transform,
-        world_to_object: Transform,
-        radius: Float,
-        z_min: Float,
-        z_max: Float,
-        phi_max: Float,
-    ) -> &mut SceneDescriptionBuilder {
-        self.sphere_names.push(base_name);
-        let sphere = Arc::new(Shape::Sphr(Sphere::new(
-            object_to_world,
-            world_to_object,
-            false,
-            radius,
-            z_min,
-            z_max,
-            phi_max,
-        )));
-        self.spheres.push(sphere);
-        self
-    }
+    // fn add_cylinder(
+    //     &mut self,
+    //     base_name: String,
+    //     object_to_world: Transform,
+    //     world_to_object: Transform,
+    //     radius: Float,
+    //     z_min: Float,
+    //     z_max: Float,
+    //     phi_max: Float,
+    // ) -> &mut SceneDescriptionBuilder {
+    //     self.cylinder_names.push(base_name);
+    //     let cylinder = Arc::new(Shape::Clndr(Cylinder::new(
+    //         object_to_world,
+    //         world_to_object,
+    //         false,
+    //         radius,
+    //         z_min,
+    //         z_max,
+    //         phi_max,
+    //     )));
+    //     self.cylinders.push(cylinder);
+    //     self
+    // }
+    // fn add_disk(
+    //     &mut self,
+    //     base_name: String,
+    //     object_to_world: Transform,
+    //     world_to_object: Transform,
+    //     height: Float,
+    //     radius: Float,
+    //     inner_radius: Float,
+    //     phi_max: Float,
+    // ) -> &mut SceneDescriptionBuilder {
+    //     self.disk_names.push(base_name);
+    //     let disk = Arc::new(Shape::Dsk(Disk::new(
+    //         object_to_world,
+    //         world_to_object,
+    //         false,
+    //         height,
+    //         radius,
+    //         inner_radius,
+    //         phi_max,
+    //     )));
+    //     self.disks.push(disk);
+    //     self
+    // }
+    // fn add_sphere(
+    //     &mut self,
+    //     base_name: String,
+    //     object_to_world: Transform,
+    //     world_to_object: Transform,
+    //     radius: Float,
+    //     z_min: Float,
+    //     z_max: Float,
+    //     phi_max: Float,
+    // ) -> &mut SceneDescriptionBuilder {
+    //     self.sphere_names.push(base_name);
+    //     let sphere = Arc::new(Shape::Sphr(Sphere::new(
+    //         object_to_world,
+    //         world_to_object,
+    //         false,
+    //         radius,
+    //         z_min,
+    //         z_max,
+    //         phi_max,
+    //     )));
+    //     self.spheres.push(sphere);
+    //     self
+    // }
     fn add_hdr_light(
         &mut self,
         light_to_world: Transform,
@@ -1279,112 +1278,6 @@ impl RenderOptions {
 
 // TMP
 
-fn decode_blender_header(header: &[u8], version: &mut u32, print_it: bool) -> bool {
-    // BLENDER
-    match header[0] as char {
-        'B' => {
-            if print_it {
-                print!("B");
-            }
-        }
-        _ => return false,
-    }
-    match header[1] as char {
-        'L' => {
-            if print_it {
-                print!("L");
-            }
-        }
-        _ => return false,
-    }
-    match header[2] as char {
-        'E' => {
-            if print_it {
-                print!("E");
-            }
-        }
-        _ => return false,
-    }
-    match header[3] as char {
-        'N' => {
-            if print_it {
-                print!("N");
-            }
-        }
-        _ => return false,
-    }
-    match header[4] as char {
-        'D' => {
-            if print_it {
-                print!("D");
-            }
-        }
-        _ => return false,
-    }
-    match header[5] as char {
-        'E' => {
-            if print_it {
-                print!("E");
-            }
-        }
-        _ => return false,
-    }
-    match header[6] as char {
-        'R' => {
-            if print_it {
-                print!("R");
-            }
-        }
-        _ => return false,
-    }
-    // [_|-]
-    match header[7] as char {
-        '_' => {
-            if print_it {
-                print!("_");
-            }
-        }
-        '-' => {
-            if print_it {
-                print!("-");
-            }
-        }
-        _ => return false,
-    }
-    // [v|V]
-    match header[8] as char {
-        'v' => {
-            if print_it {
-                print!("v");
-            }
-        }
-        'V' => {
-            if print_it {
-                print!("V");
-            }
-        }
-        _ => return false,
-    }
-    for i in 9..12 {
-        if header[i].is_ascii_digit() {
-            if print_it {
-                print!("{:?}", (header[i] as char).to_digit(10).unwrap());
-            }
-        } else {
-            return false;
-        }
-    }
-    if print_it {
-        print!("\n");
-    }
-    // get the version number
-    let last3c = vec![header[9], header[10], header[11]];
-    let version_str = String::from_utf8(last3c).unwrap();
-    // convert to u32 and return
-    *version = version_str.parse::<u32>().unwrap();
-    true
-}
-
 fn get_material<'s, 'h>(
     mesh_name: &'s String,
     material_hm: &'h HashMap<String, Blend279Material>,
@@ -1425,16 +1318,6 @@ fn get_material<'s, 'h>(
         }
     }
     // material_hm.get(mesh_name)
-}
-
-fn make_id(code: &[u8]) -> String {
-    let mut id = String::with_capacity(4);
-    for i in 0..4 {
-        if (code[i] as char).is_ascii_alphanumeric() {
-            id.push(code[i] as char);
-        }
-    }
-    id
 }
 
 fn read_mesh(
@@ -1599,73 +1482,6 @@ fn read_mesh(
             );
         }
     }
-}
-
-fn read_names(
-    f: &mut File,
-    nr_names: usize,
-    names: &mut Vec<String>,
-    byte_counter: &mut usize,
-) -> std::io::Result<()> {
-    // let mut name_counter: usize = 0;
-    let mut buffer = [0; 1];
-    loop {
-        if names.len() == nr_names {
-            break;
-        } else {
-            let mut name = String::new();
-            loop {
-                // read only one char/byte
-                f.read(&mut buffer)?;
-                *byte_counter += 1;
-                if buffer[0] == 0 {
-                    break;
-                } else {
-                    name.push(buffer[0] as char);
-                }
-            }
-            // println!("  {:?}", name);
-            names.push(name);
-            // name_counter += 1;
-        }
-    }
-    // println!("  {} names found in {} bytes", name_counter, byte_counter);
-    Ok(())
-}
-
-fn read_type_names(
-    f: &mut File,
-    nr_types: usize,
-    type_names: &mut Vec<String>,
-    byte_counter: &mut usize,
-) -> std::io::Result<()> {
-    // let mut name_counter: usize = 0;
-    let mut buffer = [0; 1];
-    loop {
-        if type_names.len() == nr_types {
-            break;
-        } else {
-            let mut name = String::new();
-            loop {
-                // read only one char/byte
-                f.read(&mut buffer)?;
-                *byte_counter += 1;
-                if buffer[0] == 0 {
-                    break;
-                } else {
-                    name.push(buffer[0] as char);
-                }
-            }
-            // println!("  {:?}", name);
-            type_names.push(name);
-            // name_counter += 1;
-        }
-    }
-    // println!(
-    //     "  {} type names found in {} bytes",
-    //     name_counter, byte_counter
-    // );
-    Ok(())
 }
 
 pub fn make_perspective_camera(
@@ -1960,6 +1776,7 @@ fn main() -> std::io::Result<()> {
     let mut types: Vec<String> = Vec::new();
     let mut num_bytes_read: usize = 0;
     let print_dna: bool = false;
+    let verbose: bool = false;
     read_dna(
         print_dna,
         &args.path,
@@ -1969,13 +1786,16 @@ fn main() -> std::io::Result<()> {
         &mut types,
         &mut num_bytes_read,
     )?;
-    println!("{} {:?}", num_bytes_read, &args.path);
+    if verbose {
+        println!("{} {:?}", num_bytes_read, &args.path);
+    }
     let names: Vec<String> = vec![
         "Scene".to_string(),
         "Object".to_string(),
         "Camera".to_string(),
         "Lamp".to_string(),
         "Material".to_string(),
+        "Image".to_string(),
         "Mesh".to_string(),
         "MPoly".to_string(),
         "MVert".to_string(),
@@ -1983,8 +1803,6 @@ fn main() -> std::io::Result<()> {
         "MLoopUV".to_string(),
         "MLoopCol".to_string(),
     ];
-    // WORK
-    let verbose: bool = false;
     // then use the DNA
     let mut bytes_read: Vec<u8> = Vec::with_capacity(num_bytes_read);
     let mut structs_read: Vec<String> = Vec::with_capacity(names.len());
@@ -2001,24 +1819,29 @@ fn main() -> std::io::Result<()> {
         &mut structs_read,
         &mut data_read,
     )?;
-    println!(
-        "TODO: Do something with the {} bytes returned by use_dna(...).",
-        bytes_read.len()
-    );
+    if verbose {
+        println!(
+            "TODO: Do something with the {} bytes returned by use_dna(...).",
+            bytes_read.len()
+        );
+    }
     // store data for pbrt here
     let mut material_hm: HashMap<String, Blend279Material> = HashMap::with_capacity(ob_count);
     let mut object_to_world_hm: HashMap<String, Transform> = HashMap::with_capacity(ob_count);
     let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
     let mut data_following_mesh: bool = false;
     let mut is_smooth: bool = false;
+    let parent = args.path.parent().unwrap();
     // structs_read
     let mut byte_index: usize = 0;
     let mut struct_index: usize = 0;
     for struct_read in structs_read {
-        println!(
-            "{} ({} - {})",
-            struct_read, byte_index, data_read[struct_index]
-        );
+        if verbose {
+            println!(
+                "{} ({} - {})",
+                struct_read, byte_index, data_read[struct_index]
+            );
+        }
         if let Some(tlen) = dna_types_hm.get(&struct_read) {
             if data_read[struct_index] == *tlen as u32 {
                 // single structs
@@ -2053,10 +1876,12 @@ fn main() -> std::io::Result<()> {
                                                         calc_mem_tlen(member2, *type_found2);
                                                     if member2.mem_name.contains("size") {
                                                         resolution_percentage = get_short(
-                                                            member,
+                                                            member2,
                                                             &bytes_read,
-                                                            byte_index,
-                                                        ) as u16;
+                                                            byte_index + byte_index2,
+                                                        )
+                                                            as u16;
+                                                        byte_index2 += mem_tlen2 as usize;
                                                     } else if member2.mem_name.contains("xsch") {
                                                         let xsch = get_int(
                                                             member2,
@@ -2119,9 +1944,9 @@ fn main() -> std::io::Result<()> {
                             // reset booleans
                             data_following_mesh = false;
                             is_smooth = false;
-                            println!("data_following_mesh = {}", data_following_mesh);
                         }
                         "Object" => {
+                            ob_count += 1;
                             for member in &struct_found.members {
                                 match member.mem_name.as_str() {
                                     "id" => {
@@ -2179,7 +2004,6 @@ fn main() -> std::io::Result<()> {
                             // reset booleans
                             data_following_mesh = false;
                             is_smooth = false;
-                            println!("data_following_mesh = {}", data_following_mesh);
                         }
                         "Camera" => {
                             let mut lens: f32 = 0.0;
@@ -2226,8 +2050,8 @@ fn main() -> std::io::Result<()> {
                             angle_y = degrees(focallength_to_fov(lens, sensor_y) as Float);
                             let cam: BlendCamera = BlendCamera {
                                 lens,
-                                angle_x,
-                                angle_y,
+                                // angle_x,
+                                // angle_y,
                                 clipsta,
                             };
                             if verbose {
@@ -2237,7 +2061,6 @@ fn main() -> std::io::Result<()> {
                             // reset booleans
                             data_following_mesh = false;
                             is_smooth = false;
-                            println!("data_following_mesh = {}", data_following_mesh);
                         }
                         "Lamp" => {
                             let mut la_type: i16 = 0;
@@ -2335,7 +2158,6 @@ fn main() -> std::io::Result<()> {
                             // reset booleans
                             data_following_mesh = false;
                             is_smooth = false;
-                            println!("data_following_mesh = {}", data_following_mesh);
                         }
                         "Material" => {
                             if data_following_mesh {
@@ -2442,7 +2264,7 @@ fn main() -> std::io::Result<()> {
                                 r: r,
                                 g: g,
                                 b: b,
-                                a: 1.0,
+                                // a: 1.0,
                                 specr: specr,
                                 specg: specg,
                                 specb: specb,
@@ -2461,7 +2283,86 @@ fn main() -> std::io::Result<()> {
                             // reset booleans
                             data_following_mesh = false;
                             is_smooth = false;
-                            println!("data_following_mesh = {}", data_following_mesh);
+                        }
+                        "Image" => {
+                            for member in &struct_found.members {
+                                match member.mem_name.as_str() {
+                                    "id" => {
+                                        let id: String = get_id_name(
+                                            member,
+                                            &bytes_read,
+                                            byte_index,
+                                            &dna_structs_hm,
+                                            &dna_types_hm,
+                                        );
+                                        if verbose {
+                                            println!("  ID.name = {:?}", id);
+                                        }
+                                        base_name = id.clone()[2..].to_string();
+                                    }
+                                    "name[1024]" => {
+                                        if let Some(type_found) = dna_types_hm.get(&member.mem_type)
+                                        {
+                                            let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                            let mut name = String::with_capacity(mem_tlen as usize);
+                                            for i in 0..mem_tlen as usize {
+                                                if bytes_read[byte_index + i] == 0 {
+                                                    break;
+                                                }
+                                                name.push(bytes_read[byte_index + i] as char);
+                                            }
+                                            if name.len() > 2 {
+                                                // println!("  name = {}", name);
+                                                let image_path: &Path = Path::new(&name);
+                                                // println!("  image_path = {:?}", image_path);
+                                                if let Some(img_ext) = image_path.extension() {
+                                                    // println!("  img_ext = {:?}", img_ext);
+                                                    if img_ext == "hdr" {
+                                                        if image_path.starts_with("//") {
+                                                            if let Ok(relative) =
+                                                                image_path.strip_prefix("//")
+                                                            {
+                                                                let canonicalized = parent
+                                                                    .join(relative.clone())
+                                                                    .canonicalize()
+                                                                    .unwrap();
+                                                                println!("{:?}", canonicalized);
+                                                                hdr_path =
+                                                                    canonicalized.into_os_string();
+                                                            }
+                                                        }
+                                                    } else {
+                                                        if image_path.starts_with("//") {
+                                                            if let Ok(relative) =
+                                                                image_path.strip_prefix("//")
+                                                            {
+                                                                let canonicalized = parent
+                                                                    .join(relative.clone())
+                                                                    .canonicalize()
+                                                                    .unwrap();
+                                                                println!("{:?}", canonicalized);
+                                                                texture_hm.insert(
+                                                                    base_name.clone(),
+                                                                    canonicalized.into_os_string(),
+                                                                );
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                                // find mem_type in dna_types.names
+                                if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                    let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                    byte_index += mem_tlen as usize;
+                                }
+                            }
+                            // reset booleans
+                            data_following_mesh = false;
+                            is_smooth = false;
                         }
                         "Mesh" => {
                             if data_following_mesh {
@@ -2504,44 +2405,44 @@ fn main() -> std::io::Result<()> {
                                             &dna_structs_hm,
                                             &dna_types_hm,
                                         );
-                                        if !verbose {
+                                        if verbose {
                                             println!("  ID.name = {:?}", id);
                                         }
                                         base_name = id.clone()[2..].to_string();
                                     }
                                     "totvert" => {
                                         totvert = get_int(member, &bytes_read, byte_index);
-                                        if !verbose {
+                                        if verbose {
                                             println!("  totvert = {:?}", totvert);
                                         }
                                     }
                                     "totedge" => {
                                         totedge = get_int(member, &bytes_read, byte_index);
-                                        if !verbose {
+                                        if verbose {
                                             println!("  totedge = {:?}", totedge);
                                         }
                                     }
                                     "totface" => {
                                         totface = get_int(member, &bytes_read, byte_index);
-                                        if !verbose {
+                                        if verbose {
                                             println!("  totface = {:?}", totface);
                                         }
                                     }
                                     "totselect" => {
                                         totselect = get_int(member, &bytes_read, byte_index);
-                                        if !verbose {
+                                        if verbose {
                                             println!("  totselect = {:?}", totselect);
                                         }
                                     }
                                     "totpoly" => {
                                         totpoly = get_int(member, &bytes_read, byte_index);
-                                        if !verbose {
+                                        if verbose {
                                             println!("  totpoly = {:?}", totpoly);
                                         }
                                     }
                                     "totloop" => {
                                         totloop = get_int(member, &bytes_read, byte_index);
-                                        if !verbose {
+                                        if verbose {
                                             println!("  totloop = {:?}", totloop);
                                         }
                                     }
@@ -2554,7 +2455,6 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                             data_following_mesh = true;
-                            println!("data_following_mesh = {}", data_following_mesh);
                         }
                         "MPoly" => {
                             let mut loopstart: i32 = 0;
@@ -2641,7 +2541,7 @@ fn main() -> std::io::Result<()> {
                                             });
                                         }
                                         "no[3]" => {
-                                            let mut no: [i16; 3] =
+                                            let no: [i16; 3] =
                                                 get_short3(member, &bytes_read, byte_index);
                                             // convert short values to floats
                                             let factor: f32 = 1.0 / 32767.0;
@@ -2700,7 +2600,7 @@ fn main() -> std::io::Result<()> {
                                 for member in &struct_found.members {
                                     match member.mem_name.as_str() {
                                         "uv[2]" => {
-                                            let mut uv: [f32; 2] =
+                                            let uv: [f32; 2] =
                                                 get_float2(member, &bytes_read, byte_index);
                                             if verbose {
                                                 println!("  uv[{}] = {:?}", s, uv);
@@ -2799,8 +2699,9 @@ fn main() -> std::io::Result<()> {
         }
         struct_index += 1;
     }
-    println!("byte_index = {}", byte_index);
-    // WORK
+    if verbose {
+        println!("byte_index = {}", byte_index);
+    }
 
     // // then use the DNA
     // {
@@ -5021,7 +4922,7 @@ fn main() -> std::io::Result<()> {
         let mut integrator_params: ParamSet = ParamSet::default();
         integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
         let integrator_name: String;
-        if render_options.has_emitters {
+        if render_options.has_emitters || render_options.lights.len() > 0 {
             integrator_name = String::from("path");
         } else {
             integrator_name = String::from("ao");
