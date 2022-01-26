@@ -13,7 +13,7 @@ at your option.
 MIT license
 -----------
 
-Copyright (c) 2016-2020 Jan Douglas Bert Walter
+Copyright (c) 2016 Jan Douglas Bert Walter
 
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated
@@ -230,7 +230,7 @@ APPENDIX: How to apply the Apache License to your work.
    same "printed page" as the copyright notice for easier
    identification within third-party archives.
 
-Copyright 2016-2020 Jan Douglas Bert Walter
+Copyright 2016 Jan Douglas Bert Walter
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

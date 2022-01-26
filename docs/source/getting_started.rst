@@ -17,12 +17,23 @@ Compiling rs_pbrt
 Cloning the repository
 ----------------------
 
-There are two repositories you can get the **Rust source code** from:
+There are three repositories you can get the **Rust source code** from:
 
-1. `GitHub repository`_
-2. `Codeberg repository`_
+1. `sourcehut repository`_
+2. `GitHub repository`_
+3. `Codeberg repository`_
 
-Both should be exactly the same, but reported issues etc. might differ.
+All three should be exactly the same, but reported issues etc. might differ.
+
+sourcehut
+.........
+
+.. code:: shell
+
+          # read-only
+          git clone https://git.sr.ht/~wahn/rs-pbrt
+          # read/write
+          git clone git@git.sr.ht:~wahn/rs-pbrt
 
 GitHub
 ......
@@ -106,24 +117,25 @@ you get a simple **usage** message of the main executable ``rs_pbrt``:
           # relative path to executable rs_pbrt (assuming release build)
           ./target/release/rs_pbrt --help
           # output
-          rs_pbrt 0.9.3
+          rs_pbrt 0.9.4
           Parse a PBRT scene file (extension .pbrt) and render it
-          
+
           USAGE:
               rs_pbrt [OPTIONS] <path>
-          
+
           FLAGS:
               -h, --help       Prints help information
               -V, --version    Prints version information
-          
+
           OPTIONS:
-                  --cropx0 <cropx0>        Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
-                  --cropx1 <cropx1>        Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
-                  --cropy0 <cropy0>        Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
-                  --cropy1 <cropy1>        Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
-              -t, --nthreads <nthreads>    use specified number of threads for rendering [default: 0]
-              -s, --samples <samples>      pixel samples [default: 0]
-          
+                  --cropx0 <cropx0>            Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
+                  --cropx1 <cropx1>            Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
+                  --cropy0 <cropy0>            Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
+                  --cropy1 <cropy1>            Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
+              -i, --integrator <integrator>    ao, directlighting, whitted, path, bdpt, mlt, sppm, volpath
+              -t, --nthreads <nthreads>        use specified number of threads for rendering [default: 0]
+              -s, --samples <samples>          pixel samples [default: 0]
+
           ARGS:
               <path>    The path to the file to read
 
@@ -134,7 +146,7 @@ The **version** can be checked by:
           # print version number
           ./target/release/rs_pbrt --version
           # output
-          rs_pbrt 0.9.3
+          rs_pbrt 0.9.4
 
 Your first rendered image
 =========================
@@ -147,8 +159,8 @@ render a `PNG`_ image (currently always being called ``pbrt.png``):
           # specifing an input file
           ./target/release/rs_pbrt ~/git/gitlab/rs-pbrt-test-scenes/pbrt/cornell_box/cornell_box.pbrt
           # output
-          pbrt version 0.9.3 (unknown) [Detected 4 cores]
-          Copyright (c) 2016-2021 Jan Douglas Bert Walter.
+          pbrt version 0.9.4 (unknown) [Detected 4 cores]
+          Copyright (c) 2016-2022 Jan Douglas Bert Walter.
           Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.
           Film "image"
             "integer xresolution" [500]
@@ -156,8 +168,9 @@ render a `PNG`_ image (currently always being called ``pbrt.png``):
           Sampler "sobol"
             "integer pixelsamples" [8]
           Integrator "path"
+          Integrator "path"
           Rendering with 4 thread(s) ...
-          1024 / 1024 [=======================================================================] 100.00 % 191.65/s 
+          1024 / 1024 [=======================================================================] 100.00 % 176.58/s
           Writing image "pbrt.png" with bounds Bounds2i { p_min: Point2i { x: 0, y: 0 }, p_max: Point2i { x: 500, y: 500 } }
 
 The resulting image should look like this:
@@ -217,6 +230,7 @@ provided scenes!
 
 .. _install Rust: https://www.rust-lang.org/tools/install
 .. _rustup: https://github.com/rust-lang-nursery/rustup.rs
+.. _sourcehut repository: https://git.sr.ht/~wahn/rs-pbrt
 .. _GitHub repository: https://github.com/wahn/rs_pbrt
 .. _Codeberg repository: https://codeberg.org/wahn/rs_pbrt
 .. _its documentation: https://doc.rust-lang.org/cargo
@@ -225,4 +239,3 @@ provided scenes!
 .. _PNG: https://en.wikipedia.org/wiki/Portable_Network_Graphics
 .. _scene files: https://gitlab.com/jdb-walter/rs-pbrt-test-scenes
 .. _Wiki: https://gitlab.com/jdb-walter/rs-pbrt-test-scenes/wikis/home
-

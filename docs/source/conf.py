@@ -18,11 +18,11 @@
 # -- Project information -----------------------------------------------------
 
 project = 'rs-pbrt'
-copyright = '2020, Jan Douglas Bert Walter'
+copyright = '2022, Jan Douglas Bert Walter'
 author = 'Jan Douglas Bert Walter'
 
 # The full version, including alpha/beta/rc tags
-release = '0.9.3'
+release = '0.9.4'
 
 
 # -- General configuration ---------------------------------------------------
