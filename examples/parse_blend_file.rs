@@ -1742,7 +1742,7 @@ fn main() -> std::io::Result<()> {
     let mut scale_length: f32 = 1.0;
     let mut resolution_x: u32 = 640;
     let mut resolution_y: u32 = 480;
-    let mut resolution_percentage: u16 = 100;
+    let mut resolution_percentage: i16 = 100;
     let mut angle_x: f32 = 45.0;
     let mut angle_y: f32 = 45.0;
     let mut base_name = String::new();
@@ -1761,13 +1761,13 @@ fn main() -> std::io::Result<()> {
     let mut loops: Vec<u8> = Vec::with_capacity(1048576);
     let mut vertex_indices: Vec<u32> = Vec::with_capacity(1048576);
     let mut vertex_colors: Vec<u8> = Vec::with_capacity(1048576);
-    let mut loop_indices: Vec<i32> = Vec::with_capacity(4194304); // 2^22
-                                                                  // let mut prop_height: f64 = 0.0;
-                                                                  // let mut prop_radius: f64 = 1.0;
-                                                                  // let mut prop_innerradius: f64 = 0.0;
-                                                                  // let mut prop_zmin: f64 = -1.0;
-                                                                  // let mut prop_zmax: f64 = 1.0;
-                                                                  // let mut prop_phimax: f64 = 360.0;
+    let mut loop_indices: Vec<i32> = Vec::with_capacity(4194304);
+    // let mut prop_height: f64 = 0.0;
+    // let mut prop_radius: f64 = 1.0;
+    // let mut prop_innerradius: f64 = 0.0;
+    // let mut prop_zmin: f64 = -1.0;
+    // let mut prop_zmax: f64 = 1.0;
+    // let mut prop_phimax: f64 = 360.0;
     let mut hdr_path: OsString = OsString::new();
     // read DNA
     let mut dna_types_hm: HashMap<String, u16> = HashMap::new();
@@ -1874,15 +1874,14 @@ fn main() -> std::io::Result<()> {
                                                 {
                                                     let mem_tlen2: u16 =
                                                         calc_mem_tlen(member2, *type_found2);
-                                                    if member2.mem_name.contains("size") {
+                                                    if member2.mem_name.as_str() == "size" {
                                                         resolution_percentage = get_short(
                                                             member2,
                                                             &bytes_read,
                                                             byte_index + byte_index2,
-                                                        )
-                                                            as u16;
+                                                        );
                                                         byte_index2 += mem_tlen2 as usize;
-                                                    } else if member2.mem_name.contains("xsch") {
+                                                    } else if member2.mem_name.as_str() == "xsch" {
                                                         let xsch = get_int(
                                                             member2,
                                                             &bytes_read,
@@ -1890,7 +1889,7 @@ fn main() -> std::io::Result<()> {
                                                         );
                                                         resolution_x = xsch as u32;
                                                         byte_index2 += mem_tlen2 as usize;
-                                                    } else if member2.mem_name.contains("ysch") {
+                                                    } else if member2.mem_name.as_str() == "ysch" {
                                                         let ysch = get_int(
                                                             member2,
                                                             &bytes_read,
