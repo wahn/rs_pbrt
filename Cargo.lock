@@ -84,9 +84,9 @@ checksum = "3d155346769a6855b86399e9bc3814ab343cd3d62c7e985113d46a0ec3c281fd"
 
 [[package]]
 name = "blend_info"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c02532c02a0416eb0da9d086ee46e2e454f4bc62776519b9a10fb15256ea2d80"
+checksum = "1107ac3310594463feadd04c36dfeaf6ea4d102f00febd7818ecab9d3efde0cd"
 dependencies = [
  "structopt",
 ]
