@@ -2,12 +2,12 @@
 
 [![crates.io](https://img.shields.io/crates/v/rs_pbrt.svg)](https://crates.io/crates/rs_pbrt)
 [![Build Status](https://travis-ci.com/wahn/rs_pbrt.svg?branch=master)](https://travis-ci.com/wahn/rs_pbrt)
-<!-- [![](https://img.shields.io/github/issues-raw/wahn/rs_pbrt.svg)](https://github.com/wahn/rs_pbrt/issues) -->
 [![](https://tokei.rs/b1/github/wahn/rs_pbrt?category=code)](https://github.com/wahn/rs_pbrt)
 [![Documentation Status](https://readthedocs.org/projects/rs-pbrt/badge/?version=latest)](https://rs-pbrt.readthedocs.io/en/latest/?badge=latest)
-[![dependency status](https://deps.rs/repo/sr.ht/~wahn/rs_pbrt/status.svg)](https://deps.rs/repo/sr.ht/~wahn/rs_pbrt)
+[![dependency status](https://deps.rs/repo/sourcehut/~wahn/rs_pbrt/status.svg)](https://deps.rs/repo/sourcehut/~wahn/rs_pbrt)
 [![builds.sr.ht status](https://builds.sr.ht/~wahn/rs-pbrt.svg)](https://builds.sr.ht/~wahn/rs-pbrt?)
 <!-- [![](https://img.shields.io/github/release-date/wahn/rs_pbrt.svg)](https://github.com/wahn/rs_pbrt/releases) -->
+<!-- [![](https://img.shields.io/github/issues-raw/wahn/rs_pbrt.svg)](https://github.com/wahn/rs_pbrt/issues) -->
 
 You can find more information about `rs_pbrt` at https://www.rs-pbrt.org/about ...
 
