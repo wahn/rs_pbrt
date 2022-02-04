@@ -12,7 +12,7 @@ homepage = "https://www.rs-pbrt.org"
 [dependencies]
 atom = "0.4.0"
 atomic = "0.5.1"
-blend_info = "0.2.3"
+blend_info = "0.2.4"
 byteorder = "1.4.3"
 crossbeam = "0.8.1"
 crossbeam-channel = "0.5.2"

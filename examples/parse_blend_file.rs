@@ -1772,16 +1772,20 @@ fn main() -> std::io::Result<()> {
     // read DNA
     let mut dna_types_hm: HashMap<String, u16> = HashMap::new();
     let mut dna_structs_hm: HashMap<String, DnaStrC> = HashMap::new();
+    let mut dna_pointers_hm: HashMap<usize, usize> = HashMap::new();
     let mut dna_2_type_id: Vec<u16> = Vec::new();
     let mut types: Vec<String> = Vec::new();
     let mut num_bytes_read: usize = 0;
     let print_dna: bool = false;
+    let print_pointers: bool = false;
     let verbose: bool = false;
     read_dna(
         print_dna,
+        print_pointers,
         &args.path,
         &mut dna_types_hm,
         &mut dna_structs_hm,
+        &mut dna_pointers_hm,
         &mut dna_2_type_id,
         &mut types,
         &mut num_bytes_read,
