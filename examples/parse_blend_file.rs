@@ -1807,12 +1807,14 @@ fn main() -> std::io::Result<()> {
         "MLoopUV".to_string(),
         "MLoopCol".to_string(),
         "bNodeTree".to_string(),
+        "bNode".to_string(),
         "bNodeSocketValueFloat".to_string(),
     ];
     // then use the DNA
     let mut bytes_read: Vec<u8> = Vec::with_capacity(num_bytes_read);
     let mut structs_read: Vec<String> = Vec::with_capacity(names.len());
     let mut data_read: Vec<u32> = Vec::with_capacity(names.len());
+    let mut pointers_read: Vec<(usize, u32)> = Vec::with_capacity(names.len());
     use_dna(
         print_dna,
         &args.path,
@@ -1824,6 +1826,7 @@ fn main() -> std::io::Result<()> {
         &mut bytes_read,
         &mut structs_read,
         &mut data_read,
+        &mut pointers_read,
     )?;
     if verbose {
         println!(
@@ -2273,13 +2276,18 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                             if emit == 0.0 && use_nodes == 1 {
+                                println!(
+                                    "{} (SDNAnr = {}) ({:#018x})",
+                                    struct_read,
+                                    pointers_read[struct_index].1,
+                                    pointers_read[struct_index].0
+                                );
                                 println!("use_nodes = {}", use_nodes);
                                 if let Some(pointer_found) = dna_pointers_hm.get(&nodetree) {
                                     println!(
                                         "nodetree = {:#010x} ({:#018x})",
                                         pointer_found, nodetree
                                     );
-                                    println!("{:?}", struct_read);
                                 }
                             }
                             // Blend279Material
@@ -2537,9 +2545,53 @@ fn main() -> std::io::Result<()> {
                                 )
                             }
                         }
+                        "bNode" => {
+                            let mut next: usize;
+                            let mut prev: usize;
+                            println!(
+                                "{} (SDNAnr = {}) ({:#018x})",
+                                struct_read,
+                                pointers_read[struct_index].1,
+                                pointers_read[struct_index].0
+                            );
+                            for member in &struct_found.members {
+                                match member.mem_name.as_str() {
+                                    "*next" => {
+                                        next = get_pointer(member, &bytes_read, byte_index);
+                                        if let Some(pointer_found) = dna_pointers_hm.get(&next) {
+                                            println!(
+                                                "next = {:#010x} ({:#018x})",
+                                                pointer_found, next
+                                            );
+                                        }
+                                    }
+                                    "*prev" => {
+                                        prev = get_pointer(member, &bytes_read, byte_index);
+                                        if let Some(pointer_found) = dna_pointers_hm.get(&prev) {
+                                            println!(
+                                                "prev = {:#010x} ({:#018x})",
+                                                pointer_found, prev
+                                            );
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                                // find mem_type in dna_types.names
+                                if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                    let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                    byte_index += mem_tlen as usize;
+                                }
+                            }
+                        }
                         "bNodeTree" => {
-                            let mut first: usize = 0;
-                            let mut last: usize = 0;
+                            let mut first: usize;
+                            let mut last: usize;
+                            println!(
+                                "{} (SDNAnr = {}) ({:#018x})",
+                                struct_read,
+                                pointers_read[struct_index].1,
+                                pointers_read[struct_index].0
+                            );
                             for member in &struct_found.members {
                                 match member.mem_name.as_str() {
                                     "nodes" => {
@@ -2599,6 +2651,29 @@ fn main() -> std::io::Result<()> {
                                             byte_index += mem_tlen as usize;
                                         }
                                     }
+                                }
+                            }
+                        }
+                        "bNodeSocketValueFloat" => {
+                            let mut value: f32;
+                            for member in &struct_found.members {
+                                match member.mem_name.as_str() {
+                                    "value" => {
+                                        value = get_float(member, &bytes_read, byte_index);
+                                        println!(
+                                            "{} (SDNAnr = {}) ({:#018x})",
+                                            struct_read,
+                                            pointers_read[struct_index].1,
+                                            pointers_read[struct_index].0
+                                        );
+                                        println!("{} = {:?}", member.mem_name, value);
+                                    }
+                                    _ => {}
+                                }
+                                // find mem_type in dna_types.names
+                                if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                    let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                    byte_index += mem_tlen as usize;
                                 }
                             }
                         }
