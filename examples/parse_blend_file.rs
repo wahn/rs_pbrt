@@ -1808,6 +1808,7 @@ fn main() -> std::io::Result<()> {
         "MLoopCol".to_string(),
         "bNodeTree".to_string(),
         "bNode".to_string(),
+        "bNodeSocket".to_string(),
         "bNodeSocketValueFloat".to_string(),
     ];
     // then use the DNA
@@ -2548,6 +2549,9 @@ fn main() -> std::io::Result<()> {
                         "bNode" => {
                             let mut next: usize;
                             let mut prev: usize;
+                            let mut idname: String;
+                            let mut inputs_first: usize;
+                            let mut inputs_last: usize;
                             println!(
                                 "{} (SDNAnr = {}) ({:#018x})",
                                 struct_read,
@@ -2572,6 +2576,83 @@ fn main() -> std::io::Result<()> {
                                                 "prev = {:#010x} ({:#018x})",
                                                 pointer_found, prev
                                             );
+                                        }
+                                    }
+                                    "idname[64]" => match member.mem_type.as_str() {
+                                        "char" => {
+                                            if let Some(type_found) =
+                                                dna_types_hm.get(&member.mem_type)
+                                            {
+                                                let mem_tlen: u16 =
+                                                    calc_mem_tlen(member, *type_found);
+                                                idname = String::with_capacity(mem_tlen as usize);
+                                                for i in 0..mem_tlen as usize {
+                                                    if bytes_read[byte_index + i] == 0 {
+                                                        break;
+                                                    }
+                                                    idname.push(bytes_read[byte_index + i] as char);
+                                                }
+                                                println!("idname[64] = {:?}", idname);
+                                            }
+                                        }
+                                        _ => {}
+                                    },
+                                    "inputs" => {
+                                        if let Some(struct_found2) =
+                                            dna_structs_hm.get(&member.mem_type)
+                                        {
+                                            for member2 in &struct_found2.members {
+                                                match member2.mem_name.as_str() {
+                                                    "*first" => {
+                                                        inputs_first = get_pointer(
+                                                            member,
+                                                            &bytes_read,
+                                                            byte_index,
+                                                        );
+                                                        if let Some(pointer_found) =
+                                                            dna_pointers_hm.get(&inputs_first)
+                                                        {
+                                                            println!(
+                                                                "inputs_first = {:#010x} ({:#018x})",
+                                                                pointer_found, inputs_first
+                                                            );
+                                                        }
+                                                    }
+                                                    "*last" => {
+                                                        inputs_last = get_pointer(
+                                                            member,
+                                                            &bytes_read,
+                                                            byte_index,
+                                                        );
+                                                        if let Some(pointer_found) =
+                                                            dna_pointers_hm.get(&inputs_last)
+                                                        {
+                                                            println!(
+                                                                "inputs_last = {:#010x} ({:#018x})",
+                                                                pointer_found, inputs_last
+                                                            );
+                                                        }
+                                                    }
+                                                    _ => {}
+                                                }
+                                                // find mem_type in dna_types.names
+                                                if let Some(type_found) =
+                                                    dna_types_hm.get(&member2.mem_type)
+                                                {
+                                                    let mem_tlen: u16 =
+                                                        calc_mem_tlen(member2, *type_found);
+                                                    byte_index += mem_tlen as usize;
+                                                }
+                                            }
+                                            // find mem_type in dna_types.names
+                                            if let Some(type_found) =
+                                                dna_types_hm.get(&member.mem_type)
+                                            {
+                                                let mem_tlen: u16 =
+                                                    calc_mem_tlen(member, *type_found);
+                                                // subtract (because it gets added below)
+                                                byte_index -= mem_tlen as usize;
+                                            }
                                         }
                                     }
                                     _ => {}
@@ -2641,16 +2722,74 @@ fn main() -> std::io::Result<()> {
                                                     byte_index += mem_tlen as usize;
                                                 }
                                             }
+                                            // find mem_type in dna_types.names
+                                            if let Some(type_found) =
+                                                dna_types_hm.get(&member.mem_type)
+                                            {
+                                                let mem_tlen: u16 =
+                                                    calc_mem_tlen(member, *type_found);
+                                                // subtract (because it gets added below)
+                                                byte_index -= mem_tlen as usize;
+                                            }
                                         }
                                     }
-                                    _ => {
-                                        // find mem_type in dna_types.names
-                                        if let Some(type_found) = dna_types_hm.get(&member.mem_type)
+                                    _ => {}
+                                }
+                                // find mem_type in dna_types.names
+                                if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                    let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                    byte_index += mem_tlen as usize;
+                                }
+                            }
+                        }
+                        "bNodeSocket" => {
+                            let mut idname: String;
+                            let mut default_value: usize;
+                            println!(
+                                "{} (SDNAnr = {}) ({:#018x})",
+                                struct_read,
+                                pointers_read[struct_index].1,
+                                pointers_read[struct_index].0
+                            );
+                            for member in &struct_found.members {
+                                match member.mem_name.as_str() {
+                                    "idname[64]" => match member.mem_type.as_str() {
+                                        "char" => {
+                                            if let Some(type_found) =
+                                                dna_types_hm.get(&member.mem_type)
+                                            {
+                                                let mem_tlen: u16 =
+                                                    calc_mem_tlen(member, *type_found);
+                                                idname = String::with_capacity(mem_tlen as usize);
+                                                for i in 0..mem_tlen as usize {
+                                                    if bytes_read[byte_index + i] == 0 {
+                                                        break;
+                                                    }
+                                                    idname.push(bytes_read[byte_index + i] as char);
+                                                }
+                                                println!("idname[64] = {:?}", idname);
+                                            }
+                                        }
+                                        _ => {}
+                                    },
+                                    "*default_value" => {
+                                        default_value =
+                                            get_pointer(member, &bytes_read, byte_index);
+                                        if let Some(pointer_found) =
+                                            dna_pointers_hm.get(&default_value)
                                         {
-                                            let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
-                                            byte_index += mem_tlen as usize;
+                                            println!(
+                                                "default_value = {:#010x} ({:#018x})",
+                                                pointer_found, default_value
+                                            );
                                         }
                                     }
+                                    _ => {}
+                                }
+                                // find mem_type in dna_types.names
+                                if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                    let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                    byte_index += mem_tlen as usize;
                                 }
                             }
                         }

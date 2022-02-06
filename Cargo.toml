@@ -12,8 +12,8 @@ homepage = "https://www.rs-pbrt.org"
 [dependencies]
 atom = "0.4.0"
 atomic = "0.5.1"
-# blend_info = "0.2.4"
-blend_info = { path = "../blend_info" }
+blend_info = "0.2.5"
+# blend_info = { path = "../blend_info" }
 byteorder = "1.4.3"
 crossbeam = "0.8.1"
 crossbeam-channel = "0.5.2"
