@@ -1844,7 +1844,8 @@ fn main() -> std::io::Result<()> {
     let mut is_smooth: bool = false;
     let parent = args.path.parent().unwrap();
     // emit (use nodes or old material settings?)
-    let mut emit: f32 = 0.0;
+    let mut current_mat: Blend279Material = Blend279Material::default();
+    let mut emit: f32;
     let mut search_for_emit: bool = false;
     let mut emit_default_value: usize = 0;
     // structs_read
@@ -2178,7 +2179,14 @@ fn main() -> std::io::Result<()> {
                             is_smooth = false;
                         }
                         "Material" => {
-			    emit = 0.0; // reset
+                            emit = 0.0; // reset
+			    if data_following_material {
+				// delay adding current material to allow for emit being adjusted
+				if !verbose {
+				    println!("  mat[{:?}] = {:?}", base_name, current_mat);
+				}
+				material_hm.insert(base_name.clone(), current_mat);
+			    }
                             if data_following_mesh {
                                 // time to use the gathered data to create a mesh
                                 read_mesh(
@@ -2304,7 +2312,7 @@ fn main() -> std::io::Result<()> {
                                 search_for_emit = false;
                             }
                             // Blend279Material
-                            let mat: Blend279Material = Blend279Material {
+                            current_mat = Blend279Material {
                                 r: r,
                                 g: g,
                                 b: b,
@@ -2320,10 +2328,6 @@ fn main() -> std::io::Result<()> {
                                 ray_mirror: ray_mirror,
                                 roughness: roughness,
                             };
-                            if verbose {
-                                println!("  mat[{:?}] = {:?}", base_name, mat);
-                            }
-                            material_hm.insert(base_name.clone(), mat);
                             // reset booleans
                             data_following_mesh = false;
                             // data_following_material = false;
@@ -2332,6 +2336,13 @@ fn main() -> std::io::Result<()> {
                             data_following_material = true;
                         }
                         "Image" => {
+			    if data_following_material {
+				// delay adding current material to allow for emit being adjusted
+				if !verbose {
+				    println!("  mat[{:?}] = {:?}", base_name, current_mat);
+				}
+				material_hm.insert(base_name.clone(), current_mat);
+			    }
                             for member in &struct_found.members {
                                 match member.mem_name.as_str() {
                                     "id" => {
@@ -2843,6 +2854,8 @@ fn main() -> std::io::Result<()> {
                                         {
                                             emit = value;
                                             println!("emit = {:?}", emit);
+					    // adjust material
+					    current_mat.emit = emit;
                                         }
                                     }
                                     _ => {}
