@@ -1840,8 +1840,13 @@ fn main() -> std::io::Result<()> {
     let mut object_to_world_hm: HashMap<String, Transform> = HashMap::with_capacity(ob_count);
     let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
     let mut data_following_mesh: bool = false;
+    let mut data_following_material: bool = false;
     let mut is_smooth: bool = false;
     let parent = args.path.parent().unwrap();
+    // emit (use nodes or old material settings?)
+    let mut emit: f32 = 0.0;
+    let mut search_for_emit: bool = false;
+    let mut emit_default_value: usize = 0;
     // structs_read
     let mut byte_index: usize = 0;
     let mut struct_index: usize = 0;
@@ -1952,6 +1957,7 @@ fn main() -> std::io::Result<()> {
                             }
                             // reset booleans
                             data_following_mesh = false;
+                            data_following_material = false;
                             is_smooth = false;
                         }
                         "Object" => {
@@ -2012,6 +2018,7 @@ fn main() -> std::io::Result<()> {
                             }
                             // reset booleans
                             data_following_mesh = false;
+                            data_following_material = false;
                             is_smooth = false;
                         }
                         "Camera" => {
@@ -2069,6 +2076,7 @@ fn main() -> std::io::Result<()> {
                             camera_hm.insert(base_name.clone(), cam);
                             // reset booleans
                             data_following_mesh = false;
+                            data_following_material = false;
                             is_smooth = false;
                         }
                         "Lamp" => {
@@ -2166,9 +2174,11 @@ fn main() -> std::io::Result<()> {
                             }
                             // reset booleans
                             data_following_mesh = false;
+                            data_following_material = false;
                             is_smooth = false;
                         }
                         "Material" => {
+			    emit = 0.0; // reset
                             if data_following_mesh {
                                 // time to use the gathered data to create a mesh
                                 read_mesh(
@@ -2202,7 +2212,6 @@ fn main() -> std::io::Result<()> {
                             let mut mirr: f32 = 0.0;
                             let mut mirg: f32 = 0.0;
                             let mut mirb: f32 = 0.0;
-                            let mut emit: f32 = 0.0;
                             let mut ang: f32 = 0.0;
                             let mut ray_mirror: f32 = 0.0;
                             let mut roughness: f32 = 0.0;
@@ -2277,6 +2286,7 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                             if emit == 0.0 && use_nodes == 1 {
+                                search_for_emit = true;
                                 println!(
                                     "{} (SDNAnr = {}) ({:#018x})",
                                     struct_read,
@@ -2290,6 +2300,8 @@ fn main() -> std::io::Result<()> {
                                         pointer_found, nodetree
                                     );
                                 }
+                            } else {
+                                search_for_emit = false;
                             }
                             // Blend279Material
                             let mat: Blend279Material = Blend279Material {
@@ -2314,7 +2326,10 @@ fn main() -> std::io::Result<()> {
                             material_hm.insert(base_name.clone(), mat);
                             // reset booleans
                             data_following_mesh = false;
+                            // data_following_material = false;
                             is_smooth = false;
+                            // data
+                            data_following_material = true;
                         }
                         "Image" => {
                             for member in &struct_found.members {
@@ -2394,6 +2409,7 @@ fn main() -> std::io::Result<()> {
                             }
                             // reset booleans
                             data_following_mesh = false;
+                            data_following_material = false;
                             is_smooth = false;
                         }
                         "Mesh" => {
@@ -2486,6 +2502,11 @@ fn main() -> std::io::Result<()> {
                                     byte_index += mem_tlen as usize;
                                 }
                             }
+                            // reset booleans
+                            // data_following_mesh = false;
+                            data_following_material = false;
+                            is_smooth = false;
+                            // data
                             data_following_mesh = true;
                         }
                         "MPoly" => {
@@ -2782,6 +2803,16 @@ fn main() -> std::io::Result<()> {
                                                 "default_value = {:#010x} ({:#018x})",
                                                 pointer_found, default_value
                                             );
+                                            if data_following_material
+                                                && search_for_emit
+                                                && default_value != 0
+                                            {
+                                                emit_default_value = default_value;
+                                                println!(
+                                                    "emit_default_value = {:#018x}",
+                                                    emit_default_value
+                                                );
+                                            }
                                         }
                                     }
                                     _ => {}
@@ -2806,6 +2837,13 @@ fn main() -> std::io::Result<()> {
                                             pointers_read[struct_index].0
                                         );
                                         println!("{} = {:?}", member.mem_name, value);
+                                        if data_following_material
+                                            && search_for_emit
+                                            && emit_default_value == pointers_read[struct_index].0
+                                        {
+                                            emit = value;
+                                            println!("emit = {:?}", emit);
+                                        }
                                     }
                                     _ => {}
                                 }
