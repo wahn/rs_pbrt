@@ -2182,7 +2182,7 @@ fn main() -> std::io::Result<()> {
                             emit = 0.0; // reset
 			    if data_following_material {
 				// delay adding current material to allow for emit being adjusted
-				if !verbose {
+				if verbose {
 				    println!("  mat[{:?}] = {:?}", base_name, current_mat);
 				}
 				material_hm.insert(base_name.clone(), current_mat);
@@ -2217,10 +2217,10 @@ fn main() -> std::io::Result<()> {
                             let mut specr: f32 = 0.0;
                             let mut specg: f32 = 0.0;
                             let mut specb: f32 = 0.0;
-                            let mut mirr: f32 = 0.0;
-                            let mut mirg: f32 = 0.0;
-                            let mut mirb: f32 = 0.0;
-                            let mut ang: f32 = 0.0;
+                            let mut mirr: f32 = 1.0;
+                            let mut mirg: f32 = 1.0;
+                            let mut mirb: f32 = 1.0;
+                            let mut ang: f32 = 1.0;
                             let mut ray_mirror: f32 = 0.0;
                             let mut roughness: f32 = 0.0;
                             let mut use_nodes: u8 = 0;
@@ -2338,7 +2338,7 @@ fn main() -> std::io::Result<()> {
                         "Image" => {
 			    if data_following_material {
 				// delay adding current material to allow for emit being adjusted
-				if !verbose {
+				if verbose {
 				    println!("  mat[{:?}] = {:?}", base_name, current_mat);
 				}
 				material_hm.insert(base_name.clone(), current_mat);
