@@ -1313,6 +1313,7 @@ fn get_material<'s, 'h>(
                 return Some(mat);
             } else {
                 println!("WARNING: No material found for {:?}", mesh_name);
+                // println!("{:#?}", material_hm);
                 return None;
             }
         }
@@ -1843,12 +1844,19 @@ fn main() -> std::io::Result<()> {
     let mut data_following_material: bool = false;
     let mut is_smooth: bool = false;
     let parent = args.path.parent().unwrap();
-    // emit (use nodes or old material settings?)
+    // delay material creation
     let mut current_mat: Blend279Material = Blend279Material::default();
+    // emit (use nodes or old material settings?)
     let mut emit: f32;
     let mut search_for_emit: bool = false;
     let mut emit_default_value: usize = 0;
     let mut emit_idname: String = String::new();
+    // ior (use nodes or old material settings?)
+    let mut ior: f32 = 1.0;
+    let mut search_for_ior: bool = false;
+    let mut ior_default_value: usize = 0;
+    let mut ior_bnode_idname: String = String::new();
+    let mut ior_bnodesocket_idname: String = String::new();
     // structs_read
     let mut byte_index: usize = 0;
     let mut struct_index: usize = 0;
@@ -2273,6 +2281,10 @@ fn main() -> std::io::Result<()> {
                                     }
                                     "ang" => {
                                         ang = get_float(member, &bytes_read, byte_index);
+                                        if ang != 1.0 {
+                                            println!("ang [{:?}]= {}", base_name, ang);
+                                        }
+                                        ior = ang;
                                     }
                                     "ray_mirror" => {
                                         ray_mirror = get_float(member, &bytes_read, byte_index);
@@ -2312,6 +2324,11 @@ fn main() -> std::io::Result<()> {
                             } else {
                                 search_for_emit = false;
                             }
+                            if ang == 1.0 && use_nodes == 1 {
+                                search_for_ior = true;
+                            } else {
+                                search_for_ior = false;
+                            }
                             // Blend279Material
                             current_mat = Blend279Material {
                                 r: r,
@@ -2325,7 +2342,7 @@ fn main() -> std::io::Result<()> {
                                 mirg: mirg,
                                 mirb: mirb,
                                 emit: emit,
-                                ang: ang,
+                                ang: ior,
                                 ray_mirror: ray_mirror,
                                 roughness: roughness,
                             };
@@ -2626,10 +2643,14 @@ fn main() -> std::io::Result<()> {
                                                     idname.push(bytes_read[byte_index + i] as char);
                                                 }
                                                 // println!("idname[64] = {:?}", idname);
-						if search_for_emit {
-						    emit_idname = idname;
+                                                if search_for_emit {
+                                                    emit_idname = idname.clone();
                                                     // println!("emit_idname = {:?}", emit_idname);
-						}
+                                                }
+                                                if search_for_ior {
+                                                    ior_bnode_idname = idname.clone();
+                                                    // println!("ior_bnode_idname = {:?}", ior_bnode_idname);
+                                                }
                                             }
                                         }
                                         _ => {}
@@ -2805,6 +2826,10 @@ fn main() -> std::io::Result<()> {
                                                     idname.push(bytes_read[byte_index + i] as char);
                                                 }
                                                 // println!("idname[64] = {:?}", idname);
+                                                if search_for_ior {
+                                                    ior_bnodesocket_idname = idname.clone();
+                                                    // println!("ior_bnodesocket_idname = {:?}", ior_bnodesocket_idname);
+                                                }
                                             }
                                         }
                                         _ => {}
@@ -2827,6 +2852,16 @@ fn main() -> std::io::Result<()> {
                                                 // println!(
                                                 //     "emit_default_value = {:#018x}",
                                                 //     emit_default_value
+                                                // );
+                                            }
+                                            if data_following_material
+                                                && search_for_ior
+                                                && default_value != 0
+                                            {
+                                                ior_default_value = default_value;
+                                                // println!(
+                                                //     "ior_default_value = {:#018x}",
+                                                //     ior_default_value
                                                 // );
                                             }
                                         }
@@ -2856,12 +2891,23 @@ fn main() -> std::io::Result<()> {
                                         if data_following_material
                                             && search_for_emit
                                             && emit_default_value == pointers_read[struct_index].0
-					    && emit_idname == "ShaderNodeEmission"
+                                            && emit_idname == "ShaderNodeEmission"
                                         {
                                             emit = value;
-                                            println!("emit = {:?}", emit);
+                                            println!("emit [{:?}] = {:?}", base_name, emit);
                                             // adjust material
                                             current_mat.emit = emit;
+                                        }
+                                        if data_following_material
+                                            && search_for_ior
+                                            && ior_default_value == pointers_read[struct_index].0
+                                            && ior_bnode_idname == "ShaderNodeBsdfGlass"
+                                            && ior_bnodesocket_idname == "NodeSocketFloat"
+                                        {
+                                            ior = value;
+                                            println!("ior [{:?}] = {:?}", base_name, ior);
+                                            // adjust material
+                                            current_mat.ang = ior;
                                         }
                                     }
                                     _ => {}
