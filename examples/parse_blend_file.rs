@@ -2188,7 +2188,9 @@ fn main() -> std::io::Result<()> {
                             is_smooth = false;
                         }
                         "Material" => {
-                            emit = 0.0; // reset
+                            // reset
+                            emit = 0.0;
+                            ior = 1.0;
                             if data_following_material {
                                 // delay adding current material to allow for emit being adjusted
                                 if verbose {
