@@ -21,8 +21,8 @@ use std::path::Path;
 use std::sync::Arc;
 // others
 use blend_info::{
-    calc_mem_tlen, get_char, get_float, get_float2, get_float3, get_id_name, get_int, get_matrix,
-    get_pointer, get_short, get_short3, read_dna, use_dna, DnaStrC,
+    calc_mem_tlen, get_char, get_float, get_float2, get_float3, get_float4, get_id_name, get_int,
+    get_matrix, get_pointer, get_short, get_short3, read_dna, use_dna, DnaStrC,
 };
 // pbrt
 use rs_pbrt::core::api::{make_accelerator, make_camera, make_film, make_filter, make_sampler};
@@ -1811,6 +1811,7 @@ fn main() -> std::io::Result<()> {
         "bNode".to_string(),
         "bNodeSocket".to_string(),
         "bNodeSocketValueFloat".to_string(),
+        "bNodeSocketValueRGBA".to_string(),
     ];
     // then use the DNA
     let mut bytes_read: Vec<u8> = Vec::with_capacity(num_bytes_read);
@@ -1852,11 +1853,19 @@ fn main() -> std::io::Result<()> {
     let mut emit_default_value: usize = 0;
     let mut emit_idname: String = String::new();
     // ior (use nodes or old material settings?)
-    let mut ior: f32 = 1.0;
+    let mut ior: f32;
     let mut search_for_ior: bool = false;
     let mut ior_default_value: usize = 0;
     let mut ior_bnode_idname: String = String::new();
     let mut ior_bnodesocket_idname: String = String::new();
+    // mir (use nodes or old material settings?)
+    let mut mirr: f32;
+    let mut mirg: f32;
+    let mut mirb: f32;
+    let mut search_for_mir: bool = false;
+    let mut mir_default_value: usize = 0;
+    let mut mir_bnode_idname: String = String::new();
+    let mut mir_bnodesocket_idname: String = String::new();
     // structs_read
     let mut byte_index: usize = 0;
     let mut struct_index: usize = 0;
@@ -2191,6 +2200,9 @@ fn main() -> std::io::Result<()> {
                             // reset
                             emit = 0.0;
                             ior = 1.0;
+                            mirr = 1.0;
+                            mirg = 1.0;
+                            mirb = 1.0;
                             if data_following_material {
                                 // delay adding current material to allow for emit being adjusted
                                 if verbose {
@@ -2228,9 +2240,6 @@ fn main() -> std::io::Result<()> {
                             let mut specr: f32 = 0.0;
                             let mut specg: f32 = 0.0;
                             let mut specb: f32 = 0.0;
-                            let mut mirr: f32 = 1.0;
-                            let mut mirg: f32 = 1.0;
-                            let mut mirb: f32 = 1.0;
                             let mut ang: f32 = 1.0;
                             let mut ray_mirror: f32 = 0.0;
                             let mut roughness: f32 = 0.0;
@@ -2283,9 +2292,6 @@ fn main() -> std::io::Result<()> {
                                     }
                                     "ang" => {
                                         ang = get_float(member, &bytes_read, byte_index);
-                                        if ang != 1.0 {
-                                            println!("ang [{:?}]= {}", base_name, ang);
-                                        }
                                         ior = ang;
                                     }
                                     "ray_mirror" => {
@@ -2330,6 +2336,11 @@ fn main() -> std::io::Result<()> {
                                 search_for_ior = true;
                             } else {
                                 search_for_ior = false;
+                            }
+                            if mirr == 1.0 && mirg == 1.0 && mirb == 1.0 && use_nodes == 1 {
+                                search_for_mir = true;
+                            } else {
+                                search_for_mir = false;
                             }
                             // Blend279Material
                             current_mat = Blend279Material {
@@ -2653,6 +2664,13 @@ fn main() -> std::io::Result<()> {
                                                     ior_bnode_idname = idname.clone();
                                                     // println!("ior_bnode_idname = {:?}", ior_bnode_idname);
                                                 }
+                                                if search_for_mir {
+                                                    mir_bnode_idname = idname.clone();
+                                                    // println!(
+                                                    //     "mir_bnode_idname = {:?}",
+                                                    //     mir_bnode_idname
+                                                    // );
+                                                }
                                             }
                                         }
                                         _ => {}
@@ -2832,6 +2850,10 @@ fn main() -> std::io::Result<()> {
                                                     ior_bnodesocket_idname = idname.clone();
                                                     // println!("ior_bnodesocket_idname = {:?}", ior_bnodesocket_idname);
                                                 }
+                                                if search_for_mir {
+                                                    mir_bnodesocket_idname = idname.clone();
+                                                    // println!("mir_bnodesocket_idname = {:?}", mir_bnodesocket_idname);
+                                                }
                                             }
                                         }
                                         _ => {}
@@ -2866,6 +2888,16 @@ fn main() -> std::io::Result<()> {
                                                 //     ior_default_value
                                                 // );
                                             }
+                                            if data_following_material
+                                                && search_for_mir
+                                                && default_value != 0
+                                            {
+                                                mir_default_value = default_value;
+                                                // println!(
+                                                //     "mir_default_value = {:#018x}",
+                                                //     mir_default_value
+                                                // );
+                                            }
                                         }
                                     }
                                     _ => {}
@@ -2896,7 +2928,7 @@ fn main() -> std::io::Result<()> {
                                             && emit_idname == "ShaderNodeEmission"
                                         {
                                             emit = value;
-                                            println!("emit [{:?}] = {:?}", base_name, emit);
+                                            // println!("emit [{:?}] = {:?}", base_name, emit);
                                             // adjust material
                                             current_mat.emit = emit;
                                         }
@@ -2907,9 +2939,47 @@ fn main() -> std::io::Result<()> {
                                             && ior_bnodesocket_idname == "NodeSocketFloat"
                                         {
                                             ior = value;
-                                            println!("ior [{:?}] = {:?}", base_name, ior);
+                                            // println!("ior [{:?}] = {:?}", base_name, ior);
                                             // adjust material
                                             current_mat.ang = ior;
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                                // find mem_type in dna_types.names
+                                if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                    let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                    byte_index += mem_tlen as usize;
+                                }
+                            }
+                        }
+                        "bNodeSocketValueRGBA" => {
+                            let mut value: [f32; 4];
+                            for member in &struct_found.members {
+                                match member.mem_name.as_str() {
+                                    "value[4]" => {
+                                        value = get_float4(member, &bytes_read, byte_index);
+                                        // println!(
+                                        //     "{} (SDNAnr = {}) ({:#018x})",
+                                        //     struct_read,
+                                        //     pointers_read[struct_index].1,
+                                        //     pointers_read[struct_index].0
+                                        // );
+                                        // println!("{} = {:?}", member.mem_name, value);
+                                        if data_following_material
+                                            && search_for_mir
+                                            && mir_default_value == pointers_read[struct_index].0
+                                            && mir_bnode_idname == "ShaderNodeBsdfGlossy"
+                                            && mir_bnodesocket_idname == "NodeSocketColor"
+                                        {
+                                            mirr = value[0];
+                                            mirg = value[1];
+                                            mirb = value[2];
+                                            // println!("mir [{:?}] = {:?}", base_name, value);
+                                            // adjust material
+                                            current_mat.mirr = mirr;
+                                            current_mat.mirg = mirg;
+                                            current_mat.mirb = mirb;
                                         }
                                     }
                                     _ => {}
