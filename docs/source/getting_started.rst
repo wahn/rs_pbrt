@@ -117,7 +117,7 @@ you get a simple **usage** message of the main executable ``rs_pbrt``:
           # relative path to executable rs_pbrt (assuming release build)
           ./target/release/rs_pbrt --help
           # output
-          rs_pbrt 0.9.4
+          rs_pbrt 0.9.5
           Parse a PBRT scene file (extension .pbrt) and render it
 
           USAGE:
@@ -146,7 +146,7 @@ The **version** can be checked by:
           # print version number
           ./target/release/rs_pbrt --version
           # output
-          rs_pbrt 0.9.4
+          rs_pbrt 0.9.5
 
 Your first rendered image
 =========================
@@ -159,7 +159,7 @@ render a `PNG`_ image (currently always being called ``pbrt.png``):
           # specifing an input file
           ./target/release/rs_pbrt ~/git/gitlab/rs-pbrt-test-scenes/pbrt/cornell_box/cornell_box.pbrt
           # output
-          pbrt version 0.9.4 (unknown) [Detected 4 cores]
+          pbrt version 0.9.5 (unknown) [Detected 4 cores]
           Copyright (c) 2016-2022 Jan Douglas Bert Walter.
           Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.
           Film "image"
