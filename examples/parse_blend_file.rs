@@ -3104,6 +3104,13 @@ fn main() -> std::io::Result<()> {
         }
         struct_index += 1;
     }
+    if data_following_material {
+        // delay adding current material to allow for emit being adjusted
+        if verbose {
+            println!("  mat[{:?}] = {:?}", base_name, current_mat);
+        }
+        material_hm.insert(base_name.clone(), current_mat);
+    }
     if verbose {
         println!("byte_index = {}", byte_index);
     }
