@@ -1,12 +1,9 @@
-image: debian/stable
+image: archlinux
 packages:
-  - rustc
-  - cargo
+  - rust
 sources:
   - https://git.sr.ht/~wahn/rs-pbrt
 tasks:
-  - rustc-version: |
-      rustc --version
   - cargo-version: |
       cargo --version
   - test: |
