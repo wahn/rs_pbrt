@@ -37,3 +37,7 @@ typed-arena = "2.0.1"
 [[bin]]
 name = "rs_pbrt"
 path = "src/bin/rs_pbrt.rs"
+
+[[bin]]
+name = "parse_blend_file"
+path = "src/bin/parse_blend_file.rs"

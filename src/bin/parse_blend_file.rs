@@ -88,22 +88,22 @@ struct Cli {
     /// max length of a light-carrying path
     #[structopt(short = "m", long = "max_depth", default_value = "5")]
     max_depth: u32,
-    /// bootstrap samples [MLT]
+    /// bootstrap samples (MLT)
     #[structopt(long = "bootstrap_samples", default_value = "100000")]
     bootstrap_samples: u32,
-    /// number of Markov chains [MLT]
+    /// number of Markov chains (MLT)
     #[structopt(long = "chains", default_value = "1000")]
     chains: u32,
-    /// number of path mutations [MLT]
+    /// number of path mutations (MLT)
     #[structopt(long = "mutations_per_pixel", default_value = "100")]
     mutations_per_pixel: u32,
-    /// prob of discarding path [MLT]
+    /// prob of discarding path (MLT)
     #[structopt(long = "step_probability", default_value = "0.3")]
     step_probability: f32,
-    /// perturbation deviation [MLT]
+    /// perturbation deviation (MLT)
     #[structopt(long = "sigma", default_value = "0.01")]
     sigma: f32,
-    /// frequency to write image [SPPM]
+    /// frequency to write image (SPPM)
     #[structopt(long = "write_frequency", default_value = "1")]
     write_frequency: i32,
     /// The path to the file to read
