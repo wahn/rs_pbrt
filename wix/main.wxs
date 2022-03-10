@@ -33,8 +33,8 @@
 
     <Product
         Id='*'
-        Name='pbrt'
-        UpgradeCode='075CE62C-480A-45C8-B356-A893D6ADB971'
+        Name='rs_pbrt'
+        UpgradeCode='39ACD02F-CCF8-4CBD-A68D-058DD8E72913'
         Manufacturer='Jan Walter'
         Language='1033'
         Codepage='1252'
@@ -56,11 +56,11 @@
             DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
 
         <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
-        <Property Id='DiskPrompt' Value='pbrt Installation'/>
+        <Property Id='DiskPrompt' Value='rs_pbrt Installation'/>
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
             <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
-                <Directory Id='APPLICATIONFOLDER' Name='pbrt'>
+                <Directory Id='APPLICATIONFOLDER' Name='rs_pbrt'>
                     <!--
                       Disabling the license sidecar file in the installer is a two step process:
 
@@ -70,14 +70,14 @@
                     -->
                     <Component Id='License' Guid='*' Win64='$(var.Win64)'>
                         <File Id='LicenseFile'
-                            Name='License.rtf'
+                            Name='LICENSE.rtf'
                             DiskId='1'
-                            Source='wix/License.rtf'
+                            Source='LICENSE.rtf'
                             KeyPath='yes'/>
                     </Component>
                     
                     <Directory Id='Bin' Name='bin'>
-                        <Component Id='Path' Guid='D9BBA001-A5AA-4495-B703-88FD95C2BCFE' Win64='$(var.Win64)' KeyPath='yes'>
+                        <Component Id='Path' Guid='74F96050-5BE8-45BA-843E-2643F57F7E33' Win64='$(var.Win64)' KeyPath='yes'>
                             <Environment
                                 Id='PATH'
                                 Name='PATH'
@@ -93,6 +93,14 @@
                                 Name='rs_pbrt.exe'
                                 DiskId='1'
                                 Source='target/$(var.Profile)/rs_pbrt.exe'
+                                KeyPath='yes'/>
+                        </Component>
+                        <Component Id='binary1' Guid='*' Win64='$(var.Win64)'>
+                            <File
+                                Id='exe1'
+                                Name='parse_blend_file.exe'
+                                DiskId='1'
+                                Source='target/$(var.Profile)/parse_blend_file.exe'
                                 KeyPath='yes'/>
                         </Component>
                     </Directory>
@@ -116,6 +124,7 @@
             <ComponentRef Id='License'/>
             
             <ComponentRef Id='binary0'/>
+            <ComponentRef Id='binary1'/>
 
             <Feature
                 Id='Environment'
@@ -139,7 +148,7 @@
         <!--<Icon Id='ProductICO' SourceFile='wix\Product.ico'/>-->
         <!--<Property Id='ARPPRODUCTICON' Value='ProductICO' />-->
 
-        <Property Id='ARPHELPLINK' Value='https://www.rs-pbrt.org'/>
+        <Property Id='ARPHELPLINK' Value='https://www.rs-pbrt.org/doc/crates/rs_pbrt/index.html'/>
         
         <UI>
             <UIRef Id='WixUI_FeatureTree'/>
@@ -159,7 +168,7 @@
           Disabling the EULA dialog in the installer requires commenting out
           or removing the following `WixVariable` tag
         -->
-        <WixVariable Id='WixUILicenseRtf' Value='wix/License.rtf'/>
+        <WixVariable Id='WixUILicenseRtf' Value='LICENSE.rtf'/>
         
         
         <!--
