@@ -34,7 +34,7 @@
     <Product
         Id='*'
         Name='rs_pbrt'
-        UpgradeCode='39ACD02F-CCF8-4CBD-A68D-058DD8E72913'
+        UpgradeCode='73C25E49-6A33-4DC3-A0FC-E61C6DE52E63'
         Manufacturer='Jan Walter'
         Language='1033'
         Codepage='1252'
@@ -77,7 +77,7 @@
                     </Component>
                     
                     <Directory Id='Bin' Name='bin'>
-                        <Component Id='Path' Guid='74F96050-5BE8-45BA-843E-2643F57F7E33' Win64='$(var.Win64)' KeyPath='yes'>
+                        <Component Id='Path' Guid='AC1E1CA0-1F44-4DA4-B411-4D8F39EC7F98' Win64='$(var.Win64)' KeyPath='yes'>
                             <Environment
                                 Id='PATH'
                                 Name='PATH'
