@@ -175,9 +175,10 @@ struct Cli {
 #[derive(Debug, Default, Copy, Clone)]
 struct BlendCamera {
     pub lens: f32,
-    // pub angle_x: f32,
-    // pub angle_y: f32,
+    pub sensor_x: f32,
+    pub sensor_y: f32,
     pub clipsta: f32,
+    pub sensor_fit: u8,
 }
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -1744,8 +1745,10 @@ fn main() -> std::io::Result<()> {
     let mut resolution_x: u32 = 640;
     let mut resolution_y: u32 = 480;
     let mut resolution_percentage: i16 = 100;
-    let mut angle_x: f32 = 45.0;
-    let mut angle_y: f32 = 45.0;
+    let mut lens: f32 = 0.0;
+    let mut sensor_x: f32 = 45.0;
+    let mut sensor_y: f32 = 45.0;
+    let mut sensor_fit: u8 = 0;
     let mut base_name = String::new();
     let mut camera_hm: HashMap<String, BlendCamera> = HashMap::new();
     let mut texture_hm: HashMap<String, OsString> = HashMap::new();
@@ -2041,10 +2044,7 @@ fn main() -> std::io::Result<()> {
                             is_smooth = false;
                         }
                         "Camera" => {
-                            let mut lens: f32 = 0.0;
                             let mut clipsta: f32 = 0.0;
-                            let mut sensor_x: f32 = 0.0;
-                            let mut sensor_y: f32 = 0.0;
                             for member in &struct_found.members {
                                 match member.mem_name.as_str() {
                                     "id" => {
@@ -2072,6 +2072,9 @@ fn main() -> std::io::Result<()> {
                                     "sensor_y" => {
                                         sensor_y = get_float(member, &bytes_read, byte_index);
                                     }
+                                    "sensor_fit" => {
+                                        sensor_fit = get_char(member, &bytes_read, byte_index);
+                                    }
                                     _ => {}
                                 }
                                 // find mem_type in dna_types.names
@@ -2080,14 +2083,13 @@ fn main() -> std::io::Result<()> {
                                     byte_index += mem_tlen as usize;
                                 }
                             }
-                            // calculate angle_x and angle_y
-                            angle_x = degrees(focallength_to_fov(lens, sensor_x) as Float);
-                            angle_y = degrees(focallength_to_fov(lens, sensor_y) as Float);
+                            // create Blender camera
                             let cam: BlendCamera = BlendCamera {
                                 lens,
-                                // angle_x,
-                                // angle_y,
+                                sensor_x,
+                                sensor_y,
                                 clipsta,
+                                sensor_fit,
                             };
                             if verbose {
                                 println!("  {:?}", cam);
@@ -3276,18 +3278,18 @@ fn main() -> std::io::Result<()> {
     let aspect: Float = resolution_x as Float / resolution_y as Float;
     let mut fov: Float;
     let mut clipsta: Float = 0.0;
-    if aspect > 1.0 {
-        fov = angle_y;
+    if sensor_fit == 2 {
+        fov = degrees(focallength_to_fov(lens, sensor_y)) / aspect;
     } else {
-        fov = angle_x;
+        fov = degrees(focallength_to_fov(lens, sensor_x)) / aspect;
     }
     if let Some(cam) = camera_hm.get(&base_name) {
         // overwrite fov
-        if aspect > 1.0 {
-            // fov = angle_x / 2.0;
-            fov = 2.0 as Float * degrees((16.0 as Float / (aspect * cam.lens)).atan());
+        // println!("cam.sensor_fit = {}", cam.sensor_fit);
+        if cam.sensor_fit == 2 {
+            fov = degrees(focallength_to_fov(cam.lens, cam.sensor_y)) / aspect;
         } else {
-            fov = 2.0 as Float * degrees(((aspect * 16.0 as Float) / cam.lens).atan());
+            fov = degrees(focallength_to_fov(cam.lens, cam.sensor_x)) / aspect;
         }
         clipsta = cam.clipsta;
         // println!("fov[{}] overwritten", fov);
