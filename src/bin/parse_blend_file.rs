@@ -3287,7 +3287,7 @@ fn main() -> std::io::Result<()> {
         // overwrite fov
         // println!("cam.sensor_fit = {}", cam.sensor_fit);
         if cam.sensor_fit == 2 {
-            fov = degrees(focallength_to_fov(cam.lens, cam.sensor_y)) / aspect;
+            fov = degrees(focallength_to_fov(cam.lens, cam.sensor_y));
         } else {
             fov = degrees(focallength_to_fov(cam.lens, cam.sensor_x)) / aspect;
         }
