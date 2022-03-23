@@ -62,14 +62,14 @@ illuminated by a few area light sources.
 ![Ganesha Statue](https://www.janwalter.org/assets/ganesha.png)
 
 The scene can be found within the [GitLab repository][gitlab_pbrt]
-(`ganesha.tar.gz`).
+(`pbrt_ganesha.tar.gz`).
 
 ## Subsurface Scattering (SSS)
 
 ![SSS Dragon](https://www.janwalter.org/assets/sss_dragon.png)
 
 The scene can be found within the [GitLab repository][gitlab_pbrt]
-(`sss_dragon_pbrt`).
+(`sss_dragon.tar.gz`).
 
 ## Stochastic Progressive Photon Mapping (SPPM)
 
