@@ -447,4 +447,24 @@ impl PerspectiveCamera {
     pub fn get_clipping_start(&self) -> Float {
         self.clipping_start
     }
+    pub fn adjust_to_clipping_start(&self, sample: &CameraSample, ray: &mut Ray) {
+        let p_film: Point3f = Point3f {
+            x: sample.p_film.x,
+            y: sample.p_film.y,
+            z: 0.0,
+        };
+        let p_camera: Point3f = self.raster_to_camera.transform_point(&p_film);
+        let dir: Vector3f = Vector3f {
+            x: p_camera.x,
+            y: p_camera.y,
+            z: p_camera.z,
+        }
+        .normalize();
+        let o: Point3f = Point3f {
+            x: dir.x * self.clipping_start / dir.z,
+            y: dir.y * self.clipping_start / dir.z,
+            z: self.clipping_start,
+        };
+        ray.o = self.camera_to_world.transform_point(ray.time, &o);
+    }
 }

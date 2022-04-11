@@ -151,7 +151,8 @@ impl SamplerIntegrator {
                                         let clipping_start: Float = camera.get_clipping_start();
                                         if clipping_start > 0.0 as Float {
                                             // adjust ray origin for near clipping
-                                            ray.o = ray.position(clipping_start);
+                                            camera
+                                                .adjust_to_clipping_start(&camera_sample, &mut ray);
                                         }
                                         // ADDED
                                         l = integrator.li(

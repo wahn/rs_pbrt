@@ -105,6 +105,12 @@ impl Camera {
             _ => 0.0 as Float,
         }
     }
+    pub fn adjust_to_clipping_start(&self, sample: &CameraSample, ray: &mut Ray) {
+        match self {
+            Camera::Perspective(camera) => camera.adjust_to_clipping_start(sample, ray),
+            _ => {}
+        }
+    }
 }
 
 #[derive(Debug, Default, Copy, Clone)]
