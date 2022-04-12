@@ -1120,6 +1120,13 @@ pub fn generate_camera_subpath<'a>(
     let mut beta: Spectrum =
         Spectrum::new(camera.generate_ray_differential(&camera_sample, &mut ray));
     ray.scale_differentials(1.0 as Float / (sampler.get_samples_per_pixel() as Float).sqrt());
+    // ADDED
+    let clipping_start: Float = camera.get_clipping_start();
+    if clipping_start > 0.0 as Float {
+        // adjust ray origin for near clipping
+        camera.adjust_to_clipping_start(&camera_sample, &mut ray);
+    }
+    // ADDED
     // generate first vertex on camera subpath and start random walk
     let vertex: Vertex = Vertex::create_camera_from_ray(camera, &ray, &beta);
     // get extra info
