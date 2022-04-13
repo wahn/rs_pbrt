@@ -60,6 +60,7 @@ use rs_pbrt::materials::matte::MatteMaterial;
 use rs_pbrt::materials::metal::MetalMaterial;
 use rs_pbrt::materials::metal::{COPPER_K, COPPER_N, COPPER_SAMPLES, COPPER_WAVELENGTHS};
 use rs_pbrt::materials::mirror::MirrorMaterial;
+use rs_pbrt::materials::translucent::TranslucentMaterial;
 // use rs_pbrt::shapes::cylinder::Cylinder;
 // use rs_pbrt::shapes::disk::Disk;
 // use rs_pbrt::shapes::sphere::Sphere;
@@ -197,6 +198,7 @@ struct Blend279Material {
     pub ang: f32, // IOR
     pub ray_mirror: f32,
     pub roughness: f32,
+    pub translucency: f32,
 }
 
 fn focallength_to_fov(focal_length: f32, sensor: f32) -> f32 {
@@ -1148,6 +1150,27 @@ impl RenderOptions {
                                 shape_lights.push(None);
                             }
                         }
+                    } else if mat.translucency > 0.0 {
+			// TranslucentMaterial
+			let kd: Arc<dyn Texture<Spectrum> + Send + Sync> =
+			    Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
+			let ks: Arc<dyn Texture<Spectrum> + Send + Sync> =
+			    Arc::new(ConstantTexture::new(Spectrum::rgb(0.25, 0.25, 0.25)));
+			let roughness = Arc::new(ConstantTexture::new(mat.roughness as Float));
+			let reflect: Arc<dyn Texture<Spectrum> + Send + Sync> = Arc::new(
+			    ConstantTexture::new(Spectrum::new(1.0 - mat.translucency as Float)),
+			);
+			let transmit: Arc<dyn Texture<Spectrum> + Send + Sync> = Arc::new(
+			    ConstantTexture::new(Spectrum::new(mat.translucency as Float)),
+			);
+			let translucent =
+			    Arc::new(Material::Translucent(Box::new(TranslucentMaterial::new(
+				kd, ks, roughness, reflect, transmit, None, true,
+			    ))));
+			for _i in 0..triangles.len() {
+			    shape_materials.push(translucent.clone());
+			    shape_lights.push(None);
+			}
                     } else {
                         // MatteMaterial
                         let mut kd: Arc<dyn Texture<Spectrum> + Send + Sync> =
@@ -1555,7 +1578,7 @@ fn make_integrator(
         if let Some(sampler) = some_sampler {
             print!("integrator = {:?} [", integrator_name);
             if integrator_name == "whitted" {
-                println!("Whitted’s Ray-Tracing]");
+                println!("Whitted's Ray-Tracing]");
                 println!("  pixelsamples = {}", pixelsamples);
                 // CreateWhittedIntegrator
                 let max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
@@ -2245,6 +2268,7 @@ fn main() -> std::io::Result<()> {
                             let mut ang: f32 = 1.0;
                             let mut ray_mirror: f32 = 0.0;
                             let mut roughness: f32 = 0.0;
+                            let mut translucency: f32 = 0.0;
                             let mut use_nodes: u8 = 0;
                             // let mut nodetree: usize = 0;
                             for member in &struct_found.members {
@@ -2301,6 +2325,9 @@ fn main() -> std::io::Result<()> {
                                     }
                                     "roughness" => {
                                         roughness = get_float(member, &bytes_read, byte_index);
+                                    }
+                                    "translucency" => {
+                                        translucency = get_float(member, &bytes_read, byte_index);
                                     }
                                     "use_nodes" => {
                                         use_nodes = get_char(member, &bytes_read, byte_index);
@@ -2360,6 +2387,7 @@ fn main() -> std::io::Result<()> {
                                 ang: ior,
                                 ray_mirror: ray_mirror,
                                 roughness: roughness,
+                                translucency: translucency,
                             };
                             // reset booleans
                             data_following_mesh = false;
