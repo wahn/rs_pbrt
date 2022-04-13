@@ -63,7 +63,7 @@ use rs_pbrt::materials::mirror::MirrorMaterial;
 use rs_pbrt::materials::translucent::TranslucentMaterial;
 // use rs_pbrt::shapes::cylinder::Cylinder;
 // use rs_pbrt::shapes::disk::Disk;
-// use rs_pbrt::shapes::sphere::Sphere;
+use rs_pbrt::shapes::sphere::Sphere;
 use rs_pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use rs_pbrt::textures::constant::ConstantTexture;
 use rs_pbrt::textures::imagemap::convert_to_spectrum;
@@ -337,29 +337,29 @@ impl SceneDescriptionBuilder {
     //     self.disks.push(disk);
     //     self
     // }
-    // fn add_sphere(
-    //     &mut self,
-    //     base_name: String,
-    //     object_to_world: Transform,
-    //     world_to_object: Transform,
-    //     radius: Float,
-    //     z_min: Float,
-    //     z_max: Float,
-    //     phi_max: Float,
-    // ) -> &mut SceneDescriptionBuilder {
-    //     self.sphere_names.push(base_name);
-    //     let sphere = Arc::new(Shape::Sphr(Sphere::new(
-    //         object_to_world,
-    //         world_to_object,
-    //         false,
-    //         radius,
-    //         z_min,
-    //         z_max,
-    //         phi_max,
-    //     )));
-    //     self.spheres.push(sphere);
-    //     self
-    // }
+    fn add_sphere(
+        &mut self,
+        base_name: String,
+        object_to_world: Transform,
+        world_to_object: Transform,
+        radius: Float,
+        z_min: Float,
+        z_max: Float,
+        phi_max: Float,
+    ) -> &mut SceneDescriptionBuilder {
+        self.sphere_names.push(base_name);
+        let sphere = Arc::new(Shape::Sphr(Sphere::new(
+            object_to_world,
+            world_to_object,
+            false,
+            radius,
+            z_min,
+            z_max,
+            phi_max,
+        )));
+        self.spheres.push(sphere);
+        self
+    }
     fn add_hdr_light(
         &mut self,
         light_to_world: Transform,
@@ -1151,26 +1151,26 @@ impl RenderOptions {
                             }
                         }
                     } else if mat.translucency > 0.0 {
-			// TranslucentMaterial
-			let kd: Arc<dyn Texture<Spectrum> + Send + Sync> =
-			    Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
-			let ks: Arc<dyn Texture<Spectrum> + Send + Sync> =
-			    Arc::new(ConstantTexture::new(Spectrum::rgb(0.25, 0.25, 0.25)));
-			let roughness = Arc::new(ConstantTexture::new(mat.roughness as Float));
-			let reflect: Arc<dyn Texture<Spectrum> + Send + Sync> = Arc::new(
-			    ConstantTexture::new(Spectrum::new(1.0 - mat.translucency as Float)),
-			);
-			let transmit: Arc<dyn Texture<Spectrum> + Send + Sync> = Arc::new(
-			    ConstantTexture::new(Spectrum::new(mat.translucency as Float)),
-			);
-			let translucent =
-			    Arc::new(Material::Translucent(Box::new(TranslucentMaterial::new(
-				kd, ks, roughness, reflect, transmit, None, true,
-			    ))));
-			for _i in 0..triangles.len() {
-			    shape_materials.push(translucent.clone());
-			    shape_lights.push(None);
-			}
+                        // TranslucentMaterial
+                        let kd: Arc<dyn Texture<Spectrum> + Send + Sync> =
+                            Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
+                        let ks: Arc<dyn Texture<Spectrum> + Send + Sync> =
+                            Arc::new(ConstantTexture::new(Spectrum::rgb(0.25, 0.25, 0.25)));
+                        let roughness = Arc::new(ConstantTexture::new(mat.roughness as Float));
+                        let reflect: Arc<dyn Texture<Spectrum> + Send + Sync> = Arc::new(
+                            ConstantTexture::new(Spectrum::new(1.0 - mat.translucency as Float)),
+                        );
+                        let transmit: Arc<dyn Texture<Spectrum> + Send + Sync> = Arc::new(
+                            ConstantTexture::new(Spectrum::new(mat.translucency as Float)),
+                        );
+                        let translucent =
+                            Arc::new(Material::Translucent(Box::new(TranslucentMaterial::new(
+                                kd, ks, roughness, reflect, transmit, None, true,
+                            ))));
+                        for _i in 0..triangles.len() {
+                            shape_materials.push(translucent.clone());
+                            shape_lights.push(None);
+                        }
                     } else {
                         // MatteMaterial
                         let mut kd: Arc<dyn Texture<Spectrum> + Send + Sync> =
@@ -1773,6 +1773,7 @@ fn main() -> std::io::Result<()> {
     let mut sensor_y: f32 = 45.0;
     let mut sensor_fit: u8 = 0;
     let mut base_name = String::new();
+    let mut visible_hm: HashMap<String, bool> = HashMap::new();
     let mut camera_hm: HashMap<String, BlendCamera> = HashMap::new();
     let mut texture_hm: HashMap<String, OsString> = HashMap::new();
     // let mut spheres_hm: HashMap<String, PbrtSphere> = HashMap::new();
@@ -2006,6 +2007,7 @@ fn main() -> std::io::Result<()> {
                             is_smooth = false;
                         }
                         "Object" => {
+                            let mut restrictflag: u8;
                             ob_count += 1;
                             for member in &struct_found.members {
                                 match member.mem_name.as_str() {
@@ -2052,6 +2054,15 @@ fn main() -> std::io::Result<()> {
                                         }
                                         object_to_world_hm
                                             .insert(base_name.clone(), object_to_world);
+                                    }
+                                    "restrictflag" => {
+                                        restrictflag = get_char(member, &bytes_read, byte_index);
+                                        if restrictflag == 4 {
+                                            println!("  restrictflag = {:?}", restrictflag);
+                                            visible_hm.insert(base_name.clone(), false);
+                                        } else {
+                                            visible_hm.insert(base_name.clone(), true);
+                                        }
                                     }
                                     _ => {}
                                 }
@@ -2129,6 +2140,7 @@ fn main() -> std::io::Result<()> {
                             let mut g: f32 = 0.0;
                             let mut b: f32 = 0.0;
                             let mut energy: f32 = 0.0;
+                            let mut dist: f32 = 0.0;
                             for member in &struct_found.members {
                                 match member.mem_name.as_str() {
                                     "id" => {
@@ -2165,6 +2177,12 @@ fn main() -> std::io::Result<()> {
                                             println!("  energy = {}", energy);
                                         }
                                     }
+                                    "dist" => {
+                                        dist = get_float(member, &bytes_read, byte_index);
+                                        if verbose {
+                                            println!("  dist = {}", dist);
+                                        }
+                                    }
                                     _ => {}
                                 }
                                 // find mem_type in dna_types.names
@@ -2187,12 +2205,45 @@ fn main() -> std::io::Result<()> {
                                 if verbose {
                                     println!("  l = {:?}", l);
                                 }
-                                // point light
-                                builder.add_point_light(
-                                    object_to_world,
-                                    l,
-                                    args.light_scale * energy,
-                                );
+                                if dist == 25.0 {
+                                    // point light
+                                    builder.add_point_light(
+                                        object_to_world,
+                                        l,
+                                        args.light_scale * energy,
+                                    );
+                                } else {
+                                    // use a sphere with an emitting material instead
+                                    let sphere_mat: Blend279Material = Blend279Material {
+                                        r: r,
+                                        g: g,
+                                        b: b,
+                                        // a: 1.0,
+                                        specr: 0.0,
+                                        specg: 0.0,
+                                        specb: 0.0,
+                                        mirr: 0.0,
+                                        mirg: 0.0,
+                                        mirb: 0.0,
+                                        emit: args.light_scale * energy / dist,
+                                        ang: 1.0,
+                                        ray_mirror: 0.0,
+                                        roughness: 0.0,
+                                        translucency: 0.0,
+                                    };
+                                    material_hm.insert(base_name.clone(), sphere_mat);
+                                    let world_to_object: Transform =
+                                        Transform::inverse(&object_to_world);
+                                    builder.add_sphere(
+                                        base_name.clone(),
+                                        object_to_world,
+                                        world_to_object,
+                                        dist,
+                                        -dist,
+                                        dist,
+                                        360.0,
+                                    );
+                                }
                             } else if la_type == 1 {
                                 // LA_SUN
                                 if let Some(o2w) = object_to_world_hm.get(&base_name) {
@@ -2236,20 +2287,24 @@ fn main() -> std::io::Result<()> {
                                 material_hm.insert(base_name.clone(), current_mat);
                             }
                             if data_following_mesh {
-                                // time to use the gathered data to create a mesh
-                                read_mesh(
-                                    &base_name,
-                                    &object_to_world_hm,
-                                    &mut object_to_world,
-                                    &p,
-                                    &n,
-                                    &mut uvs,
-                                    &loops,
-                                    vertex_indices.clone(),
-                                    vertex_colors.clone(),
-                                    is_smooth,
-                                    &mut builder,
-                                );
+                                if let Some(visible) = visible_hm.get(&base_name) {
+                                    if *visible {
+                                        // time to use the gathered data to create a mesh
+                                        read_mesh(
+                                            &base_name,
+                                            &object_to_world_hm,
+                                            &mut object_to_world,
+                                            &p,
+                                            &n,
+                                            &mut uvs,
+                                            &loops,
+                                            vertex_indices.clone(),
+                                            vertex_colors.clone(),
+                                            is_smooth,
+                                            &mut builder,
+                                        );
+                                    }
+                                }
                                 // clear all Vecs
                                 p.clear();
                                 n.clear();
@@ -2486,20 +2541,24 @@ fn main() -> std::io::Result<()> {
                         }
                         "Mesh" => {
                             if data_following_mesh {
-                                // time to use the gathered data to create a mesh
-                                read_mesh(
-                                    &base_name,
-                                    &object_to_world_hm,
-                                    &mut object_to_world,
-                                    &p,
-                                    &n,
-                                    &mut uvs,
-                                    &loops,
-                                    vertex_indices.clone(),
-                                    vertex_colors.clone(),
-                                    is_smooth,
-                                    &mut builder,
-                                );
+                                if let Some(visible) = visible_hm.get(&base_name) {
+                                    if *visible {
+                                        // time to use the gathered data to create a mesh
+                                        read_mesh(
+                                            &base_name,
+                                            &object_to_world_hm,
+                                            &mut object_to_world,
+                                            &p,
+                                            &n,
+                                            &mut uvs,
+                                            &loops,
+                                            vertex_indices.clone(),
+                                            vertex_colors.clone(),
+                                            is_smooth,
+                                            &mut builder,
+                                        );
+                                    }
+                                }
                                 // clear all Vecs
                                 p.clear();
                                 n.clear();
