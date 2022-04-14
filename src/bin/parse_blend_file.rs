@@ -271,8 +271,16 @@ impl SceneDescriptionBuilder {
         n_ws: Vec<Normal3f>,
         uv: Vec<Point2f>,
         triangle_colors: Vec<Spectrum>,
+        alpha_hide_hm: &HashMap<String, bool>,
     ) -> &mut SceneDescriptionBuilder {
-        self.mesh_names.push(base_name);
+        self.mesh_names.push(base_name.clone());
+        let mut alpha: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
+        if let Some(alpha_hide) = alpha_hide_hm.get(&base_name) {
+            if *alpha_hide {
+                println!("WARNING: use alpha to hide {:?} TriangleMesh", base_name);
+                alpha = Some(Arc::new(ConstantTexture::new(0.0)));
+            }
+        }
         let triangle_mesh = Arc::new(TriangleMesh::new(
             object_to_world,
             world_to_object,
@@ -284,8 +292,8 @@ impl SceneDescriptionBuilder {
             s,    // empty
             n_ws, // in world space
             uv,
-            None,
-            None,
+            alpha.clone(),
+            alpha.clone(),
         ));
         self.meshes.push(triangle_mesh);
         self.triangle_colors.push(triangle_colors);
@@ -1357,6 +1365,7 @@ fn read_mesh(
     vertex_colors: Vec<u8>,
     is_smooth: bool,
     builder: &mut SceneDescriptionBuilder,
+    alpha_hide_hm: &HashMap<String, bool>,
 ) {
     let mut instances: Vec<Transform> = Vec::with_capacity(u8::MAX as usize);
     let mut triangle_colors: Vec<Spectrum> = Vec::with_capacity(loops.len() * 2);
@@ -1490,6 +1499,7 @@ fn read_mesh(
                 n_ws, // in world space
                 uv,
                 triangle_colors.clone(),
+                alpha_hide_hm,
             );
         } else {
             builder.add_mesh(
@@ -1504,6 +1514,7 @@ fn read_mesh(
                 n_ws, // in world space
                 uv,
                 triangle_colors.clone(),
+                alpha_hide_hm,
             );
         }
     }
@@ -1774,6 +1785,7 @@ fn main() -> std::io::Result<()> {
     let mut sensor_fit: u8 = 0;
     let mut base_name = String::new();
     let mut visible_hm: HashMap<String, bool> = HashMap::new();
+    let mut alpha_hide_hm: HashMap<String, bool> = HashMap::new();
     let mut camera_hm: HashMap<String, BlendCamera> = HashMap::new();
     let mut texture_hm: HashMap<String, OsString> = HashMap::new();
     // let mut spheres_hm: HashMap<String, PbrtSphere> = HashMap::new();
@@ -1827,6 +1839,8 @@ fn main() -> std::io::Result<()> {
         "Camera".to_string(),
         "Lamp".to_string(),
         "Material".to_string(),
+        "IDProperty".to_string(),
+        "IDPropertyData".to_string(),
         "Image".to_string(),
         "Mesh".to_string(),
         "MPoly".to_string(),
@@ -1893,6 +1907,8 @@ fn main() -> std::io::Result<()> {
     let mut mir_default_value: usize = 0;
     let mut mir_bnode_idname: String = String::new();
     let mut mir_bnodesocket_idname: String = String::new();
+    // get Object.cycles_visibility.camera via IDProperty[Data]
+    let mut search_for_cycles_visibility_camera: bool = false;
     // structs_read
     let mut byte_index: usize = 0;
     let mut struct_index: usize = 0;
@@ -2302,6 +2318,7 @@ fn main() -> std::io::Result<()> {
                                             vertex_colors.clone(),
                                             is_smooth,
                                             &mut builder,
+                                            &alpha_hide_hm,
                                         );
                                     }
                                 }
@@ -2451,6 +2468,89 @@ fn main() -> std::io::Result<()> {
                             // data
                             data_following_material = true;
                         }
+                        "IDProperty" => {
+                            for member in &struct_found.members {
+                                match member.mem_name.as_str() {
+                                    "name[64]" => match member.mem_type.as_str() {
+                                        "char" => {
+                                            if let Some(type_found) =
+                                                dna_types_hm.get(&member.mem_type)
+                                            {
+                                                let mem_tlen: u16 =
+                                                    calc_mem_tlen(member, *type_found);
+                                                let mut name =
+                                                    String::with_capacity(mem_tlen as usize);
+                                                for i in 0..mem_tlen as usize {
+                                                    if bytes_read[byte_index + i] == 0 {
+                                                        break;
+                                                    }
+                                                    name.push(bytes_read[byte_index + i] as char);
+                                                }
+                                                if name == String::from("camera") {
+                                                    search_for_cycles_visibility_camera = true;
+                                                }
+                                            }
+                                        }
+                                        _ => {}
+                                    },
+                                    "data" => {
+                                        // IDPropertyData
+                                        if let Some(struct_found2) =
+                                            dna_structs_hm.get(&member.mem_type)
+                                        {
+                                            let mut val: i32;
+                                            for member2 in &struct_found2.members {
+                                                match member2.mem_name.as_str() {
+                                                    "val" => {
+                                                        val = get_int(
+                                                            member2,
+                                                            &bytes_read,
+                                                            byte_index,
+                                                        );
+                                                        if search_for_cycles_visibility_camera {
+                                                            let use_alpha_to_hide: bool;
+                                                            if val == 0 {
+                                                                use_alpha_to_hide = true;
+                                                            } else {
+                                                                use_alpha_to_hide = false;
+                                                            }
+                                                            alpha_hide_hm.insert(
+                                                                base_name.clone(),
+                                                                use_alpha_to_hide,
+                                                            );
+                                                        }
+                                                    }
+                                                    _ => {}
+                                                }
+                                                // find mem_type in dna_types.names
+                                                if let Some(type_found) =
+                                                    dna_types_hm.get(&member2.mem_type)
+                                                {
+                                                    let mem_tlen: u16 =
+                                                        calc_mem_tlen(member2, *type_found);
+                                                    byte_index += mem_tlen as usize;
+                                                }
+                                            }
+                                            // find mem_type in dna_types.names
+                                            if let Some(type_found) =
+                                                dna_types_hm.get(&member.mem_type)
+                                            {
+                                                let mem_tlen: u16 =
+                                                    calc_mem_tlen(member, *type_found);
+                                                // subtract (because it gets added below)
+                                                byte_index -= mem_tlen as usize;
+                                            }
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                                // find mem_type in dna_types.names
+                                if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                                    let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                                    byte_index += mem_tlen as usize;
+                                }
+                            }
+                        }
                         "Image" => {
                             if data_following_material {
                                 // delay adding current material to allow for emit being adjusted
@@ -2556,6 +2656,7 @@ fn main() -> std::io::Result<()> {
                                             vertex_colors.clone(),
                                             is_smooth,
                                             &mut builder,
+                                            &alpha_hide_hm,
                                         );
                                     }
                                 }
