@@ -2518,6 +2518,7 @@ fn main() -> std::io::Result<()> {
                                                                 base_name.clone(),
                                                                 use_alpha_to_hide,
                                                             );
+							    search_for_cycles_visibility_camera = false;
                                                         }
                                                     }
                                                     _ => {}
