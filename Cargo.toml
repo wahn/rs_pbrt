@@ -2,7 +2,7 @@
 authors = ["Jan Walter <jan@janwalter.com>"]
 edition = "2018"
 name = "rs_pbrt"
-version = "0.9.6"
+version = "0.9.7"
 license = "MIT OR Apache-2.0"
 license-file = "LICENSE.rtf"
 readme = "README.md"

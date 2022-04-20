@@ -26,7 +26,7 @@ https://www.rs-pbrt.org/doc/crates/rs_pbrt/index.html
 ```shell
 > cargo build --release --no-default-features
 > ./target/release/rs_pbrt --help
-rs_pbrt 0.9.6
+rs_pbrt 0.9.7
 Parse a PBRT scene file (extension .pbrt) and render it
 
 USAGE:
