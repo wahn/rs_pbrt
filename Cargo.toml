@@ -10,6 +10,8 @@ repository = "https://github.com/wahn/rs_pbrt"
 documentation = "https://www.rs-pbrt.org/doc/crates/rs_pbrt/index.html"
 description = "Physically based rendering (PBR) with Rust"
 homepage = "https://www.rs-pbrt.org"
+categories = ["rendering::engine", "multimedia::images", "graphics"]
+keywords = ["graphics", "pathtracer", "pathtracing", "physically-based-rendering", "pbrt"]
 [dependencies]
 atom = "0.4.0"
 atomic = "0.5.1"
