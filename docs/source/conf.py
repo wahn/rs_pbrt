@@ -22,7 +22,7 @@ copyright = '2022, Jan Douglas Bert Walter'
 author = 'Jan Douglas Bert Walter'
 
 # The full version, including alpha/beta/rc tags
-release = '0.9.7'
+release = '0.9.8'
 
 
 # -- General configuration ---------------------------------------------------
