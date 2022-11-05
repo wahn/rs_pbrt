@@ -12,7 +12,7 @@
 //    TODO: use an empty (compass) object as target
 
 // command line options
-use structopt::StructOpt;
+use clap::Parser;
 // std
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -72,43 +72,44 @@ use rs_pbrt::textures::imagemap::ImageTexture;
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /// Parse a Blender scene file and render it.
-#[derive(StructOpt)]
-struct Cli {
+#[derive(clap::Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
     /// camera name
-    #[structopt(short = "c", long = "camera_name")]
+    #[arg(short = 'c', long = "camera_name")]
     camera_name: Option<String>,
     /// global light scaling
-    #[structopt(short = "l", long = "light_scale", default_value = "1.0")]
+    #[arg(short = 'l', long = "light_scale", default_value = "1.0")]
     light_scale: f32,
     /// pixel samples
-    #[structopt(short = "s", long = "samples", default_value = "1")]
+    #[arg(short = 's', long = "samples", default_value = "1")]
     samples: u32,
     /// ao, directlighting, whitted, path, bdpt, mlt, sppm, volpath
-    #[structopt(short = "i", long = "integrator")]
+    #[arg(short = 'i', long = "integrator")]
     integrator: Option<String>,
     /// max length of a light-carrying path
-    #[structopt(short = "m", long = "max_depth", default_value = "5")]
+    #[arg(short = 'm', long = "max_depth", default_value = "5")]
     max_depth: u32,
     /// bootstrap samples (MLT)
-    #[structopt(long = "bootstrap_samples", default_value = "100000")]
+    #[arg(long = "bootstrap_samples", default_value = "100000")]
     bootstrap_samples: u32,
     /// number of Markov chains (MLT)
-    #[structopt(long = "chains", default_value = "1000")]
+    #[arg(long = "chains", default_value = "1000")]
     chains: u32,
     /// number of path mutations (MLT)
-    #[structopt(long = "mutations_per_pixel", default_value = "100")]
+    #[arg(long = "mutations_per_pixel", default_value = "100")]
     mutations_per_pixel: u32,
     /// prob of discarding path (MLT)
-    #[structopt(long = "step_probability", default_value = "0.3")]
+    #[arg(long = "step_probability", default_value = "0.3")]
     step_probability: f32,
     /// perturbation deviation (MLT)
-    #[structopt(long = "sigma", default_value = "0.01")]
+    #[arg(long = "sigma", default_value = "0.01")]
     sigma: f32,
     /// frequency to write image (SPPM)
-    #[structopt(long = "write_frequency", default_value = "1")]
+    #[arg(long = "write_frequency", default_value = "1")]
     write_frequency: i32,
     /// The path to the file to read
-    #[structopt(parse(from_os_str))]
+    #[arg(long, short)]
     path: std::path::PathBuf,
 }
 
@@ -1767,7 +1768,15 @@ fn make_scene(primitives: &Vec<Arc<Primitive>>, lights: Vec<Arc<Light>>) -> Scen
 }
 
 fn main() -> std::io::Result<()> {
-    let args = Cli::from_args();
+    let num_cores = num_cpus::get();
+    let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
+    println!(
+        "parse_blend_file version {} ({}) [Detected {} cores]",
+        VERSION, git_describe, num_cores
+    );
+    println!();
+    // handle command line options
+    let args = Args::parse();
     let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
     let num_threads: u8 = num_cpus::get() as u8;
     println!(

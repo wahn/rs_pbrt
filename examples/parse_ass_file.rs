@@ -1,10 +1,5 @@
-use pest_derive::*;
-
-// parser
-use pest::Parser;
-
-// command line options
-use structopt::StructOpt;
+use clap::Parser as ClapParser;
+use pest::Parser as PestParser;
 // pbrt
 use rs_pbrt::core::api::{make_accelerator, make_camera, make_film, make_filter, make_sampler};
 use rs_pbrt::core::camera::Camera;
@@ -50,17 +45,18 @@ use std::sync::Arc;
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /// Parse a Arnold scene file (extension .ass) and render it.
-#[derive(StructOpt)]
-struct Cli {
+#[derive(clap::Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
     /// samples per pixel
-    #[structopt(short = "s", long = "samples", default_value = "16")]
+    #[arg(short = 's', long = "samples", default_value_t = 16)]
     samples: u16,
     /// The path to the file to read
-    #[structopt(parse(from_os_str))]
+    #[arg(long, short)]
     path: std::path::PathBuf,
 }
 
-#[derive(Parser)]
+#[derive(pest_derive::Parser)]
 #[grammar = "../examples/ass.pest"]
 struct AssParser;
 
@@ -252,8 +248,9 @@ fn main() -> std::io::Result<()> {
         "parse_ass_file version {} ({}) [Detected {} cores]",
         VERSION, git_describe, num_cores
     );
+    println!();
     // handle command line options
-    let args = Cli::from_args();
+    let args = Args::parse();
     let samples_per_pixel: u16 = args.samples;
     // default values
     let mut node_name: String = String::from(""); // no default name
