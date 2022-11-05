@@ -26,27 +26,23 @@ https://www.rs-pbrt.org/doc/crates/rs_pbrt/index.html
 ```shell
 > cargo build --release --no-default-features
 > ./target/release/rs_pbrt --help
-rs_pbrt 0.9.8
-Parse a PBRT scene file (extension .pbrt) and render it
+rs_pbrt version 0.9.8 (unknown) [Detected 28 cores]
 
-USAGE:
-    rs_pbrt [OPTIONS] <path>
+Physically based rendering (PBR) with Rust
 
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
+Usage: rs_pbrt [OPTIONS] --path <PATH>
 
-OPTIONS:
-        --cropx0 <cropx0>            Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
-        --cropx1 <cropx1>            Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
-        --cropy0 <cropy0>            Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
-        --cropy1 <cropy1>            Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
-    -i, --integrator <integrator>    ao, directlighting, whitted, path, bdpt, mlt, sppm, volpath
-    -t, --nthreads <nthreads>        use specified number of threads for rendering [default: 0]
-    -s, --samples <samples>          pixel samples [default: 0]
-
-ARGS:
-    <path>    The path to the file to read
+Options:
+      --cropx0 <CROPX0>          Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
+      --cropx1 <CROPX1>          Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
+      --cropy0 <CROPY0>          Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
+      --cropy1 <CROPY1>          Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
+  -i, --integrator <INTEGRATOR>  ao, directlighting, whitted, path, bdpt, mlt, sppm, volpath
+  -t, --nthreads <NTHREADS>      use specified number of threads for rendering [default: 0]
+  -s, --samples <SAMPLES>        pixel samples [default: 0]
+  -p, --path <PATH>              The path to the file to read
+  -h, --help                     Print help information
+  -V, --version                  Print version information
 ```
 
 ## Test Scenes

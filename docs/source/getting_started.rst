@@ -117,27 +117,24 @@ you get a simple **usage** message of the main executable ``rs_pbrt``:
           # relative path to executable rs_pbrt (assuming release build)
           ./target/release/rs_pbrt --help
           # output
-          rs_pbrt 0.9.8
-          Parse a PBRT scene file (extension .pbrt) and render it
+          Physically based rendering (PBR) with Rust
+	  
+          Physically based rendering (PBR) with Rust
 
-          USAGE:
-              rs_pbrt [OPTIONS] <path>
+          Usage: rs_pbrt [OPTIONS] --path <PATH>
 
-          FLAGS:
-              -h, --help       Prints help information
-              -V, --version    Prints version information
+          Options:
+	        --cropx0 <CROPX0>          Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
+	        --cropx1 <CROPX1>          Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
+	        --cropy0 <CROPY0>          Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
+	        --cropy1 <CROPY1>          Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
+            -i, --integrator <INTEGRATOR>  ao, directlighting, whitted, path, bdpt, mlt, sppm, volpath
+            -t, --nthreads <NTHREADS>      use specified number of threads for rendering [default: 0]
+            -s, --samples <SAMPLES>        pixel samples [default: 0]
+            -p, --path <PATH>              The path to the file to read
+            -h, --help                     Print help information
+            -V, --version                  Print version information
 
-          OPTIONS:
-                  --cropx0 <cropx0>            Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
-                  --cropx1 <cropx1>            Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
-                  --cropy0 <cropy0>            Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
-                  --cropy1 <cropy1>            Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
-              -i, --integrator <integrator>    ao, directlighting, whitted, path, bdpt, mlt, sppm, volpath
-              -t, --nthreads <nthreads>        use specified number of threads for rendering [default: 0]
-              -s, --samples <samples>          pixel samples [default: 0]
-
-          ARGS:
-              <path>    The path to the file to read
 
 The **version** can be checked by:
 
@@ -146,6 +143,8 @@ The **version** can be checked by:
           # print version number
           ./target/release/rs_pbrt --version
           # output
+	  rs_pbrt version 0.9.8 (unknown) [Detected 28 cores]
+	  
           rs_pbrt 0.9.8
 
 Your first rendered image
@@ -157,11 +156,13 @@ render a `PNG`_ image (currently always being called ``pbrt.png``):
 .. code:: shell
 
           # specifing an input file
-          ./target/release/rs_pbrt ~/git/gitlab/rs-pbrt-test-scenes/pbrt/cornell_box/cornell_box.pbrt
+          ./target/release/rs_pbrt --path ~/git/gitlab/rs-pbrt-test-scenes/pbrt/cornell_box/cornell_box.pbrt
           # output
-          pbrt version 0.9.8 (unknown) [Detected 4 cores]
+	  rs_pbrt version 0.9.8 (unknown) [Detected 28 cores]
+	  
           Copyright (c) 2016-2022 Jan Douglas Bert Walter.
           Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.
+	  
           Film "image"
             "integer xresolution" [500]
             "integer yresolution" [500]
@@ -169,8 +170,8 @@ render a `PNG`_ image (currently always being called ``pbrt.png``):
             "integer pixelsamples" [8]
           Integrator "path"
           Integrator "path"
-          Rendering with 4 thread(s) ...
-          1024 / 1024 [=======================================================================] 100.00 % 176.58/s
+          Rendering with 28 thread(s) ...
+          1024 / 1024 [=======================================================================] 100.00 % 1828.38/s
           Writing image "pbrt.png" with bounds Bounds2i { p_min: Point2i { x: 0, y: 0 }, p_max: Point2i { x: 500, y: 500 } }
 
 The resulting image should look like this:
@@ -205,7 +206,7 @@ the samples per pixel on the command line:
 
 .. code:: shell
 
-           ./target/release/rs_pbrt --samples 256 ~/git/gitlab/rs-pbrt-test-scenes/pbrt/cornell_box/cornell_box.pbrt
+           ./target/release/rs_pbrt --samples 256 --path ~/git/gitlab/rs-pbrt-test-scenes/pbrt/cornell_box/cornell_box.pbrt
 
 More scenes to render
 =====================

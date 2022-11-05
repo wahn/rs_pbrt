@@ -7,10 +7,10 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 struct PbrtParser;
 
 // parser
-use pest::Parser;
+use pest::Parser as PestParser;
 
 // command line options
-use structopt::StructOpt;
+use clap::Parser as ClapParser;
 // pbrt
 use rs_pbrt::core::api::{
     pbrt_accelerator, pbrt_active_transform_all, pbrt_active_transform_end_time,
@@ -37,8 +37,9 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 /// Parse a PBRT scene file (extension .pbrt) and render it.
-#[derive(StructOpt)]
-struct Cli {
+#[derive(clap::Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
     /// Specify an image crop window <x0 x1 y0 y1>
     #[structopt(long, default_value = "0.0")]
     cropx0: f32,
@@ -52,16 +53,16 @@ struct Cli {
     #[structopt(long, default_value = "1.0")]
     cropy1: f32,
     /// ao, directlighting, whitted, path, bdpt, mlt, sppm, volpath
-    #[structopt(short = "i", long = "integrator")]
+    #[structopt(short = 'i', long = "integrator")]
     integrator: Option<String>,
     /// use specified number of threads for rendering
-    #[structopt(short = "t", long = "nthreads", default_value = "0")]
+    #[structopt(short = 't', long = "nthreads", default_value = "0")]
     nthreads: u8,
     /// pixel samples
-    #[structopt(short = "s", long = "samples", default_value = "0")]
+    #[structopt(short = 's', long = "samples", default_value = "0")]
     samples: u32,
     /// The path to the file to read
-    #[structopt(parse(from_os_str))]
+    #[arg(long, short)]
     path: std::path::PathBuf,
 }
 
@@ -887,22 +888,24 @@ fn parse_file(
 }
 
 fn main() {
+    let num_cores = num_cpus::get();
+    let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
+    println!(
+        "rs_pbrt version {} ({}) [Detected {} cores]",
+        VERSION, git_describe, num_cores
+    );
+    println!();
     // handle command line options
-    let args = Cli::from_args();
+    let args = Args::parse();
     let pixelsamples: u32 = args.samples;
     let number_of_threads: u8 = args.nthreads;
     let cropx0: f32 = args.cropx0;
     let cropx1: f32 = args.cropx1;
     let cropy0: f32 = args.cropy0;
     let cropy1: f32 = args.cropy1;
-    let num_cores = num_cpus::get();
-    let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
-    println!(
-        "pbrt version {} ({}) [Detected {} cores]",
-        VERSION, git_describe, num_cores
-    );
     println!("Copyright (c) 2016-2022 Jan Douglas Bert Walter.");
     println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
+    println!();
     let (mut api_state, mut bsdf_state) = pbrt_init(
         pixelsamples,
         number_of_threads,
