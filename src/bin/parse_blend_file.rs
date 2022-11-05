@@ -522,11 +522,11 @@ impl RenderOptions {
                         let v_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
                         let index = Arc::new(ConstantTexture::new(mat.ang as Float));
                         let glass = Arc::new(Material::Glass(Box::new(GlassMaterial {
-                            kr: kr,
-                            kt: kt,
-                            u_roughness: u_roughness,
-                            v_roughness: v_roughness,
-                            index: index,
+                            kr,
+                            kt,
+                            u_roughness,
+                            v_roughness,
+                            index,
                             bump_map: None,
                             remap_roughness: true,
                         })));
@@ -587,12 +587,7 @@ impl RenderOptions {
                             let du: Float = 0.0;
                             let dv: Float = 0.0;
                             let mapping: Box<TextureMapping2D> =
-                                Box::new(TextureMapping2D::UV(UVMapping2D {
-                                    su: su,
-                                    sv: sv,
-                                    du: du,
-                                    dv: dv,
-                                }));
+                                Box::new(TextureMapping2D::UV(UVMapping2D { su, sv, du, dv }));
                             let filename: String = String::from(tex.to_str().unwrap());
                             let do_trilinear: bool = false;
                             let max_aniso: Float = 8.0;
@@ -634,12 +629,7 @@ impl RenderOptions {
                                 let du: Float = 0.0;
                                 let dv: Float = 0.0;
                                 let mapping: Box<TextureMapping2D> =
-                                    Box::new(TextureMapping2D::UV(UVMapping2D {
-                                        su: su,
-                                        sv: sv,
-                                        du: du,
-                                        dv: dv,
-                                    }));
+                                    Box::new(TextureMapping2D::UV(UVMapping2D { su, sv, du, dv }));
                                 let filename: String = String::from(tex.to_str().unwrap());
                                 let do_trilinear: bool = false;
                                 let max_aniso: Float = 8.0;
@@ -712,11 +702,11 @@ impl RenderOptions {
                         let v_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
                         let index = Arc::new(ConstantTexture::new(mat.ang as Float));
                         let glass = Arc::new(Material::Glass(Box::new(GlassMaterial {
-                            kr: kr,
-                            kt: kt,
-                            u_roughness: u_roughness,
-                            v_roughness: v_roughness,
-                            index: index,
+                            kr,
+                            kt,
+                            u_roughness,
+                            v_roughness,
+                            index,
                             bump_map: None,
                             remap_roughness: true,
                         })));
@@ -777,12 +767,7 @@ impl RenderOptions {
                             let du: Float = 0.0;
                             let dv: Float = 0.0;
                             let mapping: Box<TextureMapping2D> =
-                                Box::new(TextureMapping2D::UV(UVMapping2D {
-                                    su: su,
-                                    sv: sv,
-                                    du: du,
-                                    dv: dv,
-                                }));
+                                Box::new(TextureMapping2D::UV(UVMapping2D { su, sv, du, dv }));
                             let filename: String = String::from(tex.to_str().unwrap());
                             let do_trilinear: bool = false;
                             let max_aniso: Float = 8.0;
@@ -824,12 +809,7 @@ impl RenderOptions {
                                 let du: Float = 0.0;
                                 let dv: Float = 0.0;
                                 let mapping: Box<TextureMapping2D> =
-                                    Box::new(TextureMapping2D::UV(UVMapping2D {
-                                        su: su,
-                                        sv: sv,
-                                        du: du,
-                                        dv: dv,
-                                    }));
+                                    Box::new(TextureMapping2D::UV(UVMapping2D { su, sv, du, dv }));
                                 let filename: String = String::from(tex.to_str().unwrap());
                                 let do_trilinear: bool = false;
                                 let max_aniso: Float = 8.0;
@@ -902,11 +882,11 @@ impl RenderOptions {
                         let v_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
                         let index = Arc::new(ConstantTexture::new(mat.ang as Float));
                         let glass = Arc::new(Material::Glass(Box::new(GlassMaterial {
-                            kr: kr,
-                            kt: kt,
-                            u_roughness: u_roughness,
-                            v_roughness: v_roughness,
-                            index: index,
+                            kr,
+                            kt,
+                            u_roughness,
+                            v_roughness,
+                            index,
                             bump_map: None,
                             remap_roughness: true,
                         })));
@@ -967,12 +947,7 @@ impl RenderOptions {
                             let du: Float = 0.0;
                             let dv: Float = 0.0;
                             let mapping: Box<TextureMapping2D> =
-                                Box::new(TextureMapping2D::UV(UVMapping2D {
-                                    su: su,
-                                    sv: sv,
-                                    du: du,
-                                    dv: dv,
-                                }));
+                                Box::new(TextureMapping2D::UV(UVMapping2D { su, sv, du, dv }));
                             let filename: String = String::from(tex.to_str().unwrap());
                             let do_trilinear: bool = false;
                             let max_aniso: Float = 8.0;
@@ -1014,12 +989,7 @@ impl RenderOptions {
                                 let du: Float = 0.0;
                                 let dv: Float = 0.0;
                                 let mapping: Box<TextureMapping2D> =
-                                    Box::new(TextureMapping2D::UV(UVMapping2D {
-                                        su: su,
-                                        sv: sv,
-                                        du: du,
-                                        dv: dv,
-                                    }));
+                                    Box::new(TextureMapping2D::UV(UVMapping2D { su, sv, du, dv }));
                                 let filename: String = String::from(tex.to_str().unwrap());
                                 let do_trilinear: bool = false;
                                 let max_aniso: Float = 8.0;
@@ -1102,11 +1072,11 @@ impl RenderOptions {
                         let v_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
                         let index = Arc::new(ConstantTexture::new(mat.ang as Float));
                         let glass = Arc::new(Material::Glass(Box::new(GlassMaterial {
-                            kr: kr,
-                            kt: kt,
-                            u_roughness: u_roughness,
-                            v_roughness: v_roughness,
-                            index: index,
+                            kr,
+                            kt,
+                            u_roughness,
+                            v_roughness,
+                            index,
                             bump_map: None,
                             remap_roughness: true,
                         })));
@@ -1191,12 +1161,7 @@ impl RenderOptions {
                             let du: Float = 0.0;
                             let dv: Float = 0.0;
                             let mapping: Box<TextureMapping2D> =
-                                Box::new(TextureMapping2D::UV(UVMapping2D {
-                                    su: su,
-                                    sv: sv,
-                                    du: du,
-                                    dv: dv,
-                                }));
+                                Box::new(TextureMapping2D::UV(UVMapping2D { su, sv, du, dv }));
                             let filename: String = String::from(tex.to_str().unwrap());
                             let do_trilinear: bool = false;
                             let max_aniso: Float = 8.0;
@@ -1238,12 +1203,7 @@ impl RenderOptions {
                                 let du: Float = 0.0;
                                 let dv: Float = 0.0;
                                 let mapping: Box<TextureMapping2D> =
-                                    Box::new(TextureMapping2D::UV(UVMapping2D {
-                                        su: su,
-                                        sv: sv,
-                                        du: du,
-                                        dv: dv,
-                                    }));
+                                    Box::new(TextureMapping2D::UV(UVMapping2D { su, sv, du, dv }));
                                 let filename: String = String::from(tex.to_str().unwrap());
                                 let do_trilinear: bool = false;
                                 let max_aniso: Float = 8.0;
@@ -1299,12 +1259,12 @@ impl RenderOptions {
             }
         }
         RenderOptions {
-            has_emitters: has_emitters,
-            primitives: primitives,
-            shapes: shapes,
-            shape_materials: shape_materials,
-            shape_lights: shape_lights,
-            lights: lights,
+            has_emitters,
+            primitives,
+            shapes,
+            shape_materials,
+            shape_lights,
+            lights,
         }
     }
 }
@@ -2240,9 +2200,9 @@ fn main() -> std::io::Result<()> {
                                 } else {
                                     // use a sphere with an emitting material instead
                                     let sphere_mat: Blend279Material = Blend279Material {
-                                        r: r,
-                                        g: g,
-                                        b: b,
+                                        r,
+                                        g,
+                                        b,
                                         // a: 1.0,
                                         specr: 0.0,
                                         specg: 0.0,
@@ -2454,21 +2414,21 @@ fn main() -> std::io::Result<()> {
                             }
                             // Blend279Material
                             current_mat = Blend279Material {
-                                r: r,
-                                g: g,
-                                b: b,
+                                r,
+                                g,
+                                b,
                                 // a: 1.0,
-                                specr: specr,
-                                specg: specg,
-                                specb: specb,
-                                mirr: mirr,
-                                mirg: mirg,
-                                mirb: mirb,
-                                emit: emit,
+                                specr,
+                                specg,
+                                specb,
+                                mirr,
+                                mirg,
+                                mirb,
+                                emit,
                                 ang: ior,
-                                ray_mirror: ray_mirror,
-                                roughness: roughness,
-                                translucency: translucency,
+                                ray_mirror,
+                                roughness,
+                                translucency,
                             };
                             // reset booleans
                             data_following_mesh = false;
@@ -2527,7 +2487,8 @@ fn main() -> std::io::Result<()> {
                                                                 base_name.clone(),
                                                                 use_alpha_to_hide,
                                                             );
-							    search_for_cycles_visibility_camera = false;
+                                                            search_for_cycles_visibility_camera =
+                                                                false;
                                                         }
                                                     }
                                                     _ => {}
