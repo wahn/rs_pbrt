@@ -57,6 +57,9 @@ struct Cli {
     /// The path to the file to read
     #[structopt(parse(from_os_str))]
     path: std::path::PathBuf,
+    /// The address and port of the display server
+    #[structopt(long = "--display-server")]
+    display_server: Option<String>,
 }
 
 // Accelerator
@@ -868,6 +871,7 @@ fn main() {
     let cropx1: f32 = args.cropx1;
     let cropy0: f32 = args.cropy0;
     let cropy1: f32 = args.cropy1;
+    let display_server: Option<String> = args.display_server;
     let num_cores = num_cpus::get();
     let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
     println!(
@@ -877,7 +881,7 @@ fn main() {
     println!("Copyright (c) 2016-2021 Jan Douglas Bert Walter.");
     println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
     let (mut api_state, mut bsdf_state) =
-        pbrt_init(number_of_threads, cropx0, cropx1, cropy0, cropy1);
+        pbrt_init(number_of_threads, cropx0, cropx1, cropy0, cropy1 , display_server );
     parse_file(
         args.path.into_os_string().into_string().unwrap(),
         &mut api_state,

@@ -2,7 +2,8 @@
 //! class that implements the **Integrator** interface.
 
 // std
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
+use std::sync::atomic::Ordering;
 // pbrt
 use crate::blockqueue::BlockQueue;
 use crate::core::camera::{Camera, CameraSample};
@@ -38,12 +39,12 @@ pub enum Integrator {
 }
 
 impl Integrator {
-    pub fn render(&mut self, scene: &Scene, num_threads: u8) {
+    pub fn render(&mut self, scene: &Scene, num_threads: u8, display_server: Option<String>) {
         match self {
             Integrator::BDPT(integrator) => integrator.render(scene, num_threads),
             Integrator::MLT(integrator) => integrator.render(scene, num_threads),
             Integrator::SPPM(integrator) => integrator.render(scene, num_threads),
-            Integrator::Sampler(integrator) => integrator.render(scene, num_threads),
+            Integrator::Sampler(integrator) => integrator.render(scene, num_threads, display_server),
         }
     }
 }
@@ -69,7 +70,7 @@ impl SamplerIntegrator {
     /// All [SamplerIntegrators](enum.SamplerIntegrator.html) use the
     /// same render loop, but call an individual
     /// [li()](enum.SamplerIntegrator.html#method.li) method.
-    pub fn render(&mut self, scene: &Scene, num_threads: u8) {
+    pub fn render(&mut self, scene: &Scene, num_threads: u8, display_server: Option<String>) {
         let film = self.get_camera().get_film();
         let sample_bounds: Bounds2i = film.get_sample_bounds();
         self.preprocess(scene);
@@ -100,6 +101,7 @@ impl SamplerIntegrator {
             let camera = &self.get_camera();
             let film = &film;
             let pixel_bounds = &self.get_pixel_bounds();
+            let address = display_server.unwrap_or("".to_string());
             crossbeam::scope(|scope| {
                 let (pixel_tx, pixel_rx) = crossbeam_channel::bounded(num_cores);
                 // spawn worker threads
@@ -210,12 +212,11 @@ impl SamplerIntegrator {
                 scope.spawn(move |_| {
                     crossbeam::scope (|sub_scope| {
                         // This should not
-                        let address = "127.0.0.1:14158";
-                        let mut display = Preview::connect_to_display_server(address);
+                        let display = Preview::connect_to_display_server(&address);
+                        let exit_thread_clone = display.as_ref().unwrap().exit_thread.clone();
                         let connected = display.is_ok();
-
                         if connected {
-                            let display = display.as_mut().unwrap();
+                            let display = display.unwrap();
                             let arc = Arc::new(&film.pixels);
 
                             // If we always need this function and never need another one we can move this inside the display
@@ -224,7 +225,8 @@ impl SamplerIntegrator {
                                     for row in b.p_min.x..b.p_max.x {
                                         let v = {
                                             let vec = arc.read().unwrap();
-                                            vec[col as usize * width + row as usize].xyz
+                                            let px = &vec[col as usize * width + row as usize];
+                                            px.
                                         };
 
                                         for (channel, value) in values.iter_mut().zip(v) {
@@ -245,12 +247,11 @@ impl SamplerIntegrator {
                             film.merge_film_tile(&film_tile);
                         }
                         if connected {
-                            display.unwrap().disconnect_from_display_server();
+                            exit_thread_clone.store(true, Ordering::Relaxed);
                         }
-                    }).unwrap();
+                    }).unwrap_or_default();
                 });
-            })
-            .unwrap();
+            }).expect("What am I even?");
         }
         film.write_image(1.0 as Float);
     }

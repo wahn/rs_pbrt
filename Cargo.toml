@@ -33,6 +33,7 @@ structopt = "0.3.21"
 strum = "0.21.0"
 strum_macros = "0.21.1"
 typed-arena = "2.0.1"
+tev_client = "0.5.2"
 
 [[bin]]
 name = "rs_pbrt"
