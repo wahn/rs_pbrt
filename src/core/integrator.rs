@@ -144,7 +144,7 @@ impl SamplerIntegrator {
                                     ray.scale_differentials(
                                         1.0 as Float
                                             / (tile_sampler.get_samples_per_pixel() as Float)
-                                                .sqrt(),
+                                            .sqrt(),
                                     );
                                     // TODO: ++nCameraRays;
                                     // evaluate radiance along camera ray
@@ -155,7 +155,8 @@ impl SamplerIntegrator {
                                         let clipping_start: Float = camera.get_clipping_start();
                                         if clipping_start > 0.0 as Float {
                                             // adjust ray origin for near clipping
-                                            ray.o = ray.position(clipping_start);
+                                            camera
+                                                .adjust_to_clipping_start(&camera_sample, &mut ray);
                                         }
                                         // ADDED
                                         l = integrator.li(
@@ -210,11 +211,17 @@ impl SamplerIntegrator {
                 }
                 // spawn thread to collect pixels and render image to file
                 scope.spawn(move |_| {
-                    crossbeam::scope (|sub_scope| {
+                    crossbeam::scope(|sub_scope| {
                         // This should not
                         let display = Preview::connect_to_display_server(&address);
-                        let exit_thread_clone = display.as_ref().unwrap().exit_thread.clone();
                         let connected = display.is_ok();
+                        let exit_thread_clone = if connected {
+                            Some(display.as_ref().unwrap().exit_thread.clone())
+                        } else {
+                            eprintln!("Could not connect to tev");
+                            None
+                        };
+
                         if connected {
                             let display = display.unwrap();
                             let arc = Arc::new(&film.pixels);
@@ -225,8 +232,7 @@ impl SamplerIntegrator {
                                     for row in b.p_min.x..b.p_max.x {
                                         let v = {
                                             let vec = arc.read().unwrap();
-                                            let px = &vec[col as usize * width + row as usize];
-                                            px.
+                                            vec[col as usize * width + row as usize].xyz
                                         };
 
                                         for (channel, value) in values.iter_mut().zip(v) {
@@ -246,8 +252,8 @@ impl SamplerIntegrator {
                             // merge image tile into _Film_
                             film.merge_film_tile(&film_tile);
                         }
-                        if connected {
-                            exit_thread_clone.store(true, Ordering::Relaxed);
+                        if let Some(exit) = exit_thread_clone {
+                            exit.store(true, Ordering::Relaxed);
                         }
                     }).unwrap_or_default();
                 });

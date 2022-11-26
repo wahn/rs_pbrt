@@ -25,12 +25,15 @@ browse: doc
 
 debug: # master.zip
 	cargo test --no-default-features
-	cargo run --no-default-features -- --help
+	cargo run --bin parse_blend_file --no-default-features -- --help
+	cargo run --bin rs_pbrt --no-default-features -- --help
 
 release:
 	cargo test --release
-	cargo run --release -- --help
+	cargo run --bin parse_blend_file --release -- --help
+	cargo run --bin rs_pbrt --release -- --help
 
 without-exr:
 	cargo test --release --no-default-features
-	cargo run --release --no-default-features -- --help
+	cargo run --bin parse_blend_file --release --no-default-features -- --help
+	cargo run --bin rs_pbrt --release --no-default-features -- --help

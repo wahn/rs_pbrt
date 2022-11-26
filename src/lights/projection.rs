@@ -233,7 +233,7 @@ impl ProjectionLight {
         if texname != "" {
             let file = std::fs::File::open(texname).unwrap();
             let reader = BufReader::new(file);
-            let img_result = image::hdr::HdrDecoder::with_strictness(reader, false);
+            let img_result = image::codecs::hdr::HdrDecoder::with_strictness(reader, false);
             if img_result.is_ok() {
                 if let Ok(hdr) = img_result {
                     let meta = hdr.metadata();

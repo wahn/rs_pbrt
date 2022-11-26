@@ -39,9 +39,6 @@ use std::str::FromStr;
 /// Parse a PBRT scene file (extension .pbrt) and render it.
 #[derive(StructOpt)]
 struct Cli {
-    /// use specified number of threads for rendering
-    #[structopt(short = "t", long = "nthreads", default_value = "0")]
-    nthreads: u8,
     /// Specify an image crop window <x0 x1 y0 y1>
     #[structopt(long, default_value = "0.0")]
     cropx0: f32,
@@ -54,6 +51,15 @@ struct Cli {
     /// Specify an image crop window <x0 x1 y0 y1>
     #[structopt(long, default_value = "1.0")]
     cropy1: f32,
+    /// ao, directlighting, whitted, path, bdpt, mlt, sppm, volpath
+    #[structopt(short = "i", long = "integrator")]
+    integrator: Option<String>,
+    /// use specified number of threads for rendering
+    #[structopt(short = "t", long = "nthreads", default_value = "0")]
+    nthreads: u8,
+    /// pixel samples
+    #[structopt(short = "s", long = "samples", default_value = "0")]
+    samples: u32,
     /// The path to the file to read
     #[structopt(parse(from_os_str))]
     path: std::path::PathBuf,
@@ -442,6 +448,7 @@ fn parse_line(
     bsdf_state: &mut BsdfState,
     identifier: &str,
     str_buf: String,
+    integrator_arg: &Option<String>,
 ) {
     if str_buf == "" {
         // no additional arguments
@@ -482,7 +489,7 @@ fn parse_line(
             "WorldEnd" => {
                 // WorldEnd
                 // println!("{} {}", identifier, str_buf);
-                pbrt_cleanup(api_state);
+                pbrt_cleanup(api_state, integrator_arg);
             }
             _ => println!("{} {:?}", identifier, str_buf),
         }
@@ -534,7 +541,13 @@ fn parse_line(
                             }
                             let todo: Vec<&str> = for_printing.splitn(3, '"').collect();
                             println!("Include {:?}", include_file);
-                            parse_file(include_file, api_state, bsdf_state, todo[2]);
+                            parse_file(
+                                include_file,
+                                api_state,
+                                bsdf_state,
+                                todo[2],
+                                integrator_arg,
+                            );
                         }
                         "Integrator" => {
                             // Integrator
@@ -764,6 +777,7 @@ fn parse_file(
     api_state: &mut ApiState,
     bsdf_state: &mut BsdfState,
     append: &str,
+    integrator_arg: &Option<String>,
 ) {
     // println!("FILE = {}", x);
     let f = File::open(filename.clone()).unwrap();
@@ -807,7 +821,13 @@ fn parse_file(
                     match statement_pair.as_rule() {
                         Rule::identifier => {
                             if identifier != "" {
-                                parse_line(api_state, bsdf_state, identifier, parse_again.clone());
+                                parse_line(
+                                    api_state,
+                                    bsdf_state,
+                                    identifier,
+                                    parse_again.clone(),
+                                    integrator_arg,
+                                );
                             }
                             identifier = statement_pair.as_str();
                             parse_again = String::default();
@@ -854,7 +874,13 @@ fn parse_file(
                     }
                 }
             }
-            Rule::EOI => parse_line(api_state, bsdf_state, identifier, parse_again.clone()),
+            Rule::EOI => parse_line(
+                api_state,
+                bsdf_state,
+                identifier,
+                parse_again.clone(),
+                integrator_arg,
+            ),
             _ => unreachable!(),
         }
     }
@@ -866,6 +892,7 @@ fn parse_file(
 fn main() {
     // handle command line options
     let args = Cli::from_args();
+    let pixelsamples: u32 = args.samples;
     let number_of_threads: u8 = args.nthreads;
     let cropx0: f32 = args.cropx0;
     let cropx1: f32 = args.cropx1;
@@ -878,14 +905,22 @@ fn main() {
         "pbrt version {} ({}) [Detected {} cores]",
         VERSION, git_describe, num_cores
     );
-    println!("Copyright (c) 2016-2021 Jan Douglas Bert Walter.");
+    println!("Copyright (c) 2016-2022 Jan Douglas Bert Walter.");
     println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
-    let (mut api_state, mut bsdf_state) =
-        pbrt_init(number_of_threads, cropx0, cropx1, cropy0, cropy1 , display_server );
+    let (mut api_state, mut bsdf_state) = pbrt_init(
+        pixelsamples,
+        number_of_threads,
+        cropx0,
+        cropx1,
+        cropy0,
+        cropy1,
+        display_server
+    );
     parse_file(
         args.path.into_os_string().into_string().unwrap(),
         &mut api_state,
         &mut bsdf_state,
         "",
+        &args.integrator,
     );
 }

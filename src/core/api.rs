@@ -115,6 +115,7 @@ impl Default for BsdfState {
 }
 
 pub struct ApiState {
+    pixelsamples: u32,
     number_of_threads: u8,
     pub search_directory: Option<Box<PathBuf>>,
     cur_transform: TransformSet,
@@ -132,6 +133,7 @@ pub struct ApiState {
 impl Default for ApiState {
     fn default() -> Self {
         ApiState {
+            pixelsamples: 0_u32,
             number_of_threads: 0_u8,
             search_directory: None,
             cur_transform: TransformSet {
@@ -209,14 +211,49 @@ pub struct RenderOptions {
 }
 
 impl RenderOptions {
-    pub fn make_integrator(&self) -> Option<Box<Integrator>> {
+    pub fn make_integrator(
+        &self,
+        pixelsamples: u32,
+        integrator_arg: &Option<String>,
+    ) -> Option<Box<Integrator>> {
         let mut some_integrator: Option<Box<Integrator>> = None;
         let some_camera: Option<Arc<Camera>> = self.make_camera();
         if let Some(camera) = some_camera {
-            let some_sampler: Option<Box<Sampler>> =
-                make_sampler(&self.sampler_name, &self.sampler_params, camera.get_film());
+            let some_sampler: Option<Box<Sampler>>;
+            if pixelsamples != 0_u32 {
+                // copy all bool and integer values, except pixelsamples
+                let mut new_sampler_params: ParamSet = ParamSet::default();
+                new_sampler_params.key_word = self.sampler_params.key_word.clone();
+                new_sampler_params.name = self.sampler_params.name.clone();
+                new_sampler_params.tex_type = self.sampler_params.tex_type.clone();
+                new_sampler_params.tex_name = self.sampler_params.tex_name.clone();
+                for b in &self.sampler_params.bools {
+                    new_sampler_params.add_bool(b.name.clone(), b.values[0]);
+                }
+                for i in &self.sampler_params.ints {
+                    if i.name == "pixelsamples" {
+                        new_sampler_params.add_int(i.name.clone(), pixelsamples as i32);
+                    } else {
+                        new_sampler_params.add_int(i.name.clone(), i.values[0]);
+                    }
+                }
+                print_params(&new_sampler_params);
+                some_sampler =
+                    make_sampler(&self.sampler_name, &new_sampler_params, camera.get_film());
+            } else {
+                some_sampler =
+                    make_sampler(&self.sampler_name, &self.sampler_params, camera.get_film());
+            }
             if let Some(sampler) = some_sampler {
-                if self.integrator_name == "whitted" {
+                // if let Some(integrator_name) = integrator_arg {
+                let integrator_name: String;
+                if let Some(integrator_name_arg) = integrator_arg {
+                    integrator_name = integrator_name_arg.clone();
+                } else {
+                    integrator_name = self.integrator_name.clone();
+                }
+                println!("Integrator {:?}", integrator_name);
+                if integrator_name == "whitted" {
                     // CreateWhittedIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
@@ -224,7 +261,7 @@ impl RenderOptions {
                         WhittedIntegrator::new(max_depth as u32, camera, sampler, pixel_bounds),
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "directlighting" {
+                } else if integrator_name == "directlighting" {
                     // CreateDirectLightingIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let st: String = self
@@ -255,7 +292,7 @@ impl RenderOptions {
                         )),
                     ));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "path" {
+                } else if integrator_name == "path" {
                     // CreatePathIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let pb: Vec<i32> = self.integrator_params.find_int("pixelbounds");
@@ -292,7 +329,7 @@ impl RenderOptions {
                         ),
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "volpath" {
+                } else if integrator_name == "volpath" {
                     // CreateVolPathIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let pb: Vec<i32> = self.integrator_params.find_int("pixelbounds");
@@ -329,7 +366,7 @@ impl RenderOptions {
                         ),
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "bdpt" {
+                } else if integrator_name == "bdpt" {
                     // CreateBDPTIntegrator
                     let mut max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let visualize_strategies: bool = self
@@ -355,7 +392,7 @@ impl RenderOptions {
                         light_strategy,
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "mlt" {
+                } else if integrator_name == "mlt" {
                     // CreateMLTIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let n_bootstrap: i32 = self
@@ -381,7 +418,7 @@ impl RenderOptions {
                         large_step_probability,
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "ambientocclusion" {
+                } else if integrator_name == "ao" || integrator_name == "ambientocclusion" {
                     // CreateAOIntegrator
                     let pb: Vec<i32> = self.integrator_params.find_int("pixelbounds");
                     let np: usize = pb.len();
@@ -406,7 +443,7 @@ impl RenderOptions {
                         AOIntegrator::new(cos_sample, n_samples, camera, sampler, pixel_bounds),
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "sppm" {
+                } else if integrator_name == "sppm" {
                     // CreateSPPMIntegrator
                     let mut n_iterations: i32 =
                         self.integrator_params.find_one_int("numiterations", 64);
@@ -434,7 +471,7 @@ impl RenderOptions {
                     )));
                     some_integrator = Some(integrator);
                 } else {
-                    println!("Integrator \"{}\" unknown.", self.integrator_name);
+                    println!("Integrator \"{}\" unknown.", integrator_name);
                 }
             } else {
                 panic!("Unable to create sampler.");
@@ -1888,7 +1925,51 @@ fn get_shapes_and_materials(
                 );
             }
         }
-        // TODO: alpha
+        // look up an alpha texture, if applicable
+        let mut alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
+        let alpha_tex_name: String = api_state.param_set.find_texture("alpha");
+        if alpha_tex_name != "" {
+            alpha_tex = match api_state
+                .graphics_state
+                .float_textures
+                .get(alpha_tex_name.as_str())
+            {
+                Some(float_texture) => Some(float_texture.clone()),
+                None => {
+                    println!(
+                        "Couldn't find float texture {:?} for \"alpha\" parameter",
+                        alpha_tex_name.as_str()
+                    );
+                    None
+                }
+            }
+        } else if api_state.param_set.find_one_float("alpha", 1.0 as Float) == 0.0 as Float {
+            alpha_tex = Some(Arc::new(ConstantTexture::new(0.0 as Float)));
+        }
+        let mut shadow_alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
+        let shadow_alpha_tex_name: String = api_state.param_set.find_texture("shadowalpha");
+        if shadow_alpha_tex_name != "" {
+            shadow_alpha_tex = match api_state
+                .graphics_state
+                .float_textures
+                .get(shadow_alpha_tex_name.as_str())
+            {
+                Some(float_texture) => Some(float_texture.clone()),
+                None => {
+                    println!(
+                        "Couldn't find float texture {:?} for \"shadowalpha\" parameter",
+                        shadow_alpha_tex_name.as_str()
+                    );
+                    None
+                }
+            }
+        } else if api_state
+            .param_set
+            .find_one_float("shadowalpha", 1.0 as Float)
+            == 0.0 as Float
+        {
+            shadow_alpha_tex = Some(Arc::new(ConstantTexture::new(0.0 as Float)));
+        }
         // CreateTriangleMesh
         // transform mesh vertices to world space
         let mut p_ws: Vec<Point3f> = Vec::new();
@@ -1912,8 +1993,8 @@ fn get_shapes_and_materials(
             s_ws, // in world space
             n_ws, // in world space
             uvs,
-            None,
-            None,
+            alpha_tex,
+            shadow_alpha_tex,
         ));
         let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
@@ -2261,6 +2342,7 @@ fn print_params(params: &ParamSet) {
 }
 
 pub fn pbrt_init(
+    pixelsamples: u32,
     number_of_threads: u8,
     cropx0: f32,
     cropx1: f32,
@@ -2270,6 +2352,7 @@ pub fn pbrt_init(
 ) -> (ApiState, BsdfState) {
     let mut api_state: ApiState = ApiState::default();
     let bsdf_state: BsdfState = BsdfState::default();
+    api_state.pixelsamples = pixelsamples;
     api_state.number_of_threads = number_of_threads;
     api_state.render_options.crop_window = Bounds2f {
         p_min: Point2f {
@@ -2285,7 +2368,7 @@ pub fn pbrt_init(
     (api_state, bsdf_state)
 }
 
-pub fn pbrt_cleanup(api_state: &ApiState) {
+pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) {
     // println!("WorldEnd");
     assert!(
         api_state.pushed_graphics_states.is_empty(),
@@ -2296,7 +2379,9 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
         "Missing end to pbrtTransformBegin()"
     );
     // MakeIntegrator
-    let some_integrator: Option<Box<Integrator>> = api_state.render_options.make_integrator();
+    let some_integrator: Option<Box<Integrator>> = api_state
+        .render_options
+        .make_integrator(api_state.pixelsamples, integrator_arg);
     if let Some(mut integrator) = some_integrator {
         let scene = api_state.render_options.make_scene();
         let num_threads: u8 = api_state.number_of_threads;

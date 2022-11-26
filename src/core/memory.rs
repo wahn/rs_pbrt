@@ -19,7 +19,7 @@ pub struct BlockedArray<T> {
     pub v_res: usize,
     pub u_blocks: usize,
     log_block_size: usize,
-    block_size: usize,
+    // block_size: usize,
 }
 
 impl<T> BlockedArray<T>
@@ -33,7 +33,7 @@ where
             v_res,
             u_blocks: round_up(u_res) >> LOG_BLOCK_SIZE,
             log_block_size: LOG_BLOCK_SIZE,
-            block_size: BLOCK_SIZE,
+            // block_size: BLOCK_SIZE,
             data,
         }
     }

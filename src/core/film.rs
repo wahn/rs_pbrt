@@ -39,7 +39,7 @@ pub struct Pixel {
     pub(crate) xyz: [Float; 3],
     filter_weight_sum: Float,
     splat_xyz: [Float; 3],
-    pad: Float,
+    // pad: Float,
 }
 
 impl Default for Pixel {
@@ -48,7 +48,7 @@ impl Default for Pixel {
             xyz: [0.0 as Float; 3],
             filter_weight_sum: 0.0 as Float,
             splat_xyz: [Float::default(), Float::default(), Float::default()],
-            pad: 0.0 as Float,
+            // pad: 0.0 as Float,
         }
     }
 }

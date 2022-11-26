@@ -18,11 +18,11 @@
 # -- Project information -----------------------------------------------------
 
 project = 'rs-pbrt'
-copyright = '2020, Jan Douglas Bert Walter'
+copyright = '2022, Jan Douglas Bert Walter'
 author = 'Jan Douglas Bert Walter'
 
 # The full version, including alpha/beta/rc tags
-release = '0.8.3'
+release = '0.9.8'
 
 
 # -- General configuration ---------------------------------------------------
@@ -52,4 +52,4 @@ html_theme = 'alabaster'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+##html_static_path = ['_static']

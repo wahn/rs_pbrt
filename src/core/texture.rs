@@ -123,14 +123,14 @@ impl UVMapping2D {
 
 #[derive(Debug, Default, Copy, Clone)]
 pub struct SphericalMapping2D {
-    sphere: Point2f,
+    // sphere: Point2f,
     pub world_to_texture: Transform,
 }
 
 impl SphericalMapping2D {
     pub fn new(world_to_texture: Transform) -> Self {
         SphericalMapping2D {
-            sphere: Point2f::default(),
+            // sphere: Point2f::default(),
             world_to_texture,
         }
     }

@@ -103,7 +103,7 @@ pub struct LinearBVHNode {
     offset: i32,
     n_primitives: u16,
     axis: u8,
-    pad: u8,
+    // pad: u8,
 }
 
 // BVHAccel -> Aggregate -> Primitive
@@ -391,7 +391,7 @@ impl BVHAccel {
                 offset: node.first_prim_offset as i32,
                 n_primitives: node.n_primitives as u16,
                 axis: 0_u8,
-                pad: 0_u8,
+                // pad: 0_u8,
             };
             nodes[my_offset] = linear_node;
         } else {
@@ -405,7 +405,7 @@ impl BVHAccel {
                     offset: BVHAccel::flatten_bvh_tree(child2, nodes, offset) as i32,
                     n_primitives: 0_u16,
                     axis: node.split_axis,
-                    pad: 0_u8,
+                    // pad: 0_u8,
                 };
                 nodes[my_offset] = linear_node;
             }
