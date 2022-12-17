@@ -127,6 +127,7 @@ pub struct ApiState {
     pushed_transforms: Vec<TransformSet>,
     pushed_active_transform_bits: Vec<u8>,
     param_set: ParamSet,
+    display_server: Option<String>,
 }
 
 impl Default for ApiState {
@@ -163,6 +164,7 @@ impl Default for ApiState {
             pushed_transforms: Vec::new(),
             pushed_active_transform_bits: Vec::new(),
             param_set: ParamSet::default(),
+            display_server: None,
         }
     }
 }
@@ -2346,6 +2348,7 @@ pub fn pbrt_init(
     cropx1: f32,
     cropy0: f32,
     cropy1: f32,
+    display_server: Option<String>
 ) -> (ApiState, BsdfState) {
     let mut api_state: ApiState = ApiState::default();
     let bsdf_state: BsdfState = BsdfState::default();
@@ -2361,6 +2364,7 @@ pub fn pbrt_init(
             y: clamp_t(cropy1.max(cropy0), 0.0, 1.0),
         },
     };
+    api_state.display_server = display_server;
     (api_state, bsdf_state)
 }
 
@@ -2381,7 +2385,8 @@ pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) {
     if let Some(mut integrator) = some_integrator {
         let scene = api_state.render_options.make_scene();
         let num_threads: u8 = api_state.number_of_threads;
-        integrator.render(&scene, num_threads);
+        let display_server = api_state.display_server.clone();
+        integrator.render(&scene, num_threads, display_server);
     } else {
         panic!("Unable to create integrator.");
     }

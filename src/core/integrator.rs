@@ -2,7 +2,8 @@
 //! class that implements the **Integrator** interface.
 
 // std
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, RwLock};
+use std::sync::atomic::Ordering;
 // pbrt
 use crate::blockqueue::BlockQueue;
 use crate::core::camera::{Camera, CameraSample};
@@ -25,6 +26,9 @@ use crate::integrators::path::PathIntegrator;
 use crate::integrators::sppm::SPPMIntegrator;
 use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
+use crate::core::film::Pixel;
+use crate::core::display::Preview;
+use crate::core::spectrum::xyz_to_rgb;
 
 // see integrator.h
 
@@ -36,12 +40,12 @@ pub enum Integrator {
 }
 
 impl Integrator {
-    pub fn render(&mut self, scene: &Scene, num_threads: u8) {
+    pub fn render(&mut self, scene: &Scene, num_threads: u8, display_server: Option<String>) {
         match self {
             Integrator::BDPT(integrator) => integrator.render(scene, num_threads),
             Integrator::MLT(integrator) => integrator.render(scene, num_threads),
             Integrator::SPPM(integrator) => integrator.render(scene, num_threads),
-            Integrator::Sampler(integrator) => integrator.render(scene, num_threads),
+            Integrator::Sampler(integrator) => integrator.render(scene, num_threads, display_server),
         }
     }
 }
@@ -67,7 +71,7 @@ impl SamplerIntegrator {
     /// All [SamplerIntegrators](enum.SamplerIntegrator.html) use the
     /// same render loop, but call an individual
     /// [li()](enum.SamplerIntegrator.html#method.li) method.
-    pub fn render(&mut self, scene: &Scene, num_threads: u8) {
+    pub fn render(&mut self, scene: &Scene, num_threads: u8, display_server: Option<String>) {
         let film = self.get_camera().get_film();
         let sample_bounds: Bounds2i = film.get_sample_bounds();
         self.preprocess(scene);
@@ -98,6 +102,7 @@ impl SamplerIntegrator {
             let camera = &self.get_camera();
             let film = &film;
             let pixel_bounds = &self.get_pixel_bounds();
+            let address = display_server.unwrap_or("".to_string());
             crossbeam::scope(|scope| {
                 let (pixel_tx, pixel_rx) = crossbeam_channel::bounded(num_cores);
                 // spawn worker threads
@@ -140,7 +145,7 @@ impl SamplerIntegrator {
                                     ray.scale_differentials(
                                         1.0 as Float
                                             / (tile_sampler.get_samples_per_pixel() as Float)
-                                                .sqrt(),
+                                            .sqrt(),
                                     );
                                     // TODO: ++nCameraRays;
                                     // evaluate radiance along camera ray
@@ -207,14 +212,64 @@ impl SamplerIntegrator {
                 }
                 // spawn thread to collect pixels and render image to file
                 scope.spawn(move |_| {
-                    for _ in pbr::PbIter::new(0..bq.len()) {
-                        let film_tile = pixel_rx.recv().unwrap();
-                        // merge image tile into _Film_
-                        film.merge_film_tile(&film_tile);
-                    }
+                    crossbeam::scope(|sub_scope| {
+                        // This should not
+                        let display = Preview::connect_to_display_server(&address);
+                        let connected = display.is_ok();
+                        let exit_thread_clone = if connected {
+                            Some(display.as_ref().unwrap().exit_thread.clone())
+                        } else {
+                            eprintln!("Could not connect to tev");
+                            None
+                        };
+
+                        if connected {
+                            let display = display.unwrap();
+                            let arc = Arc::new(&film.pixels);
+
+                            // If we always need this function and never need another one we can move this inside the display
+                            let get_values = move |b: Bounds2i, arc: Arc<&RwLock<Vec<Pixel>>>, width: usize, values: &mut Vec<Vec<Float>>| {
+                                for col in b.p_min.y..b.p_max.y {
+                                    for row in b.p_min.x..b.p_max.x {
+                                        let v = {
+                                            let vec = arc.read().unwrap();
+                                            let mut rgb = [0.0; 3];
+                                            let pixels = &vec[col as usize * width + row as usize];
+                                            xyz_to_rgb(&pixels.xyz, &mut rgb);
+
+                                            let filter_weight_sum = pixels.filter_weight_sum;
+                                            if filter_weight_sum != 0.0 as Float {
+                                                let inv_wt: Float = 1.0 as Float / filter_weight_sum;
+                                                rgb[0] = (rgb[0] * inv_wt).max(0.0 as Float);
+                                                rgb[1] = (rgb[1] * inv_wt).max(0.0 as Float);
+                                                rgb[2] = (rgb[2] * inv_wt).max(0.0 as Float);
+                                            }
+                                            rgb
+                                        };
+
+                                        for (channel, value) in values.iter_mut().zip(v) {
+                                            // Todo: We probably need to scale the values here?
+                                            channel.push(value);
+                                        }
+                                    }
+                                }
+                            };
+
+                            display.display_dynamic("Test", film.full_resolution,
+                                                    vec!["R".to_string(), "G".to_string(), "B".to_string()],
+                                                    sub_scope, arc, get_values);
+                        }
+                        for _ in pbr::PbIter::new(0..bq.len()) {
+                            let film_tile = pixel_rx.recv().unwrap();
+                            // merge image tile into _Film_
+                            film.merge_film_tile(&film_tile);
+                        }
+                        if let Some(exit) = exit_thread_clone {
+                            exit.store(true, Ordering::Relaxed);
+                        }
+                    }).unwrap_or_default();
                 });
-            })
-            .unwrap();
+            }).expect("What am I even?");
         }
         film.write_image(1.0 as Float);
     }

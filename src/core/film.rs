@@ -36,8 +36,8 @@ const FILTER_TABLE_WIDTH: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct Pixel {
-    xyz: [Float; 3],
-    filter_weight_sum: Float,
+    pub(crate) xyz: [Float; 3],
+    pub(crate) filter_weight_sum: Float,
     splat_xyz: [Float; 3],
     // pad: Float,
 }
@@ -168,7 +168,7 @@ pub struct Film {
     // Film Private Data
     pub pixels: RwLock<Vec<Pixel>>,
     filter_table: [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
-    scale: Float,
+    pub scale: Float,
     max_sample_luminance: Float,
 }
 
