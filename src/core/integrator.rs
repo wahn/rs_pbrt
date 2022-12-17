@@ -28,6 +28,7 @@ use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
 use crate::core::film::Pixel;
 use crate::core::display::Preview;
+use crate::core::spectrum::xyz_to_rgb;
 
 // see integrator.h
 
@@ -232,7 +233,18 @@ impl SamplerIntegrator {
                                     for row in b.p_min.x..b.p_max.x {
                                         let v = {
                                             let vec = arc.read().unwrap();
-                                            vec[col as usize * width + row as usize].xyz
+                                            let mut rgb = [0.0; 3];
+                                            let pixels = &vec[col as usize * width + row as usize];
+                                            xyz_to_rgb(&pixels.xyz, &mut rgb);
+
+                                            let filter_weight_sum = pixels.filter_weight_sum;
+                                            if filter_weight_sum != 0.0 as Float {
+                                                let inv_wt: Float = 1.0 as Float / filter_weight_sum;
+                                                rgb[0] = (rgb[0] * inv_wt).max(0.0 as Float);
+                                                rgb[1] = (rgb[1] * inv_wt).max(0.0 as Float);
+                                                rgb[2] = (rgb[2] * inv_wt).max(0.0 as Float);
+                                            }
+                                            rgb
                                         };
 
                                         for (channel, value) in values.iter_mut().zip(v) {

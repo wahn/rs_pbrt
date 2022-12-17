@@ -84,8 +84,8 @@ impl<'a, T: Send + Sync> DisplayItem<'a, T> {
             &mut display_values,
         );
 
-        debug_assert!(!display_values.iter().all(|x| x.iter().all(|y| *y == 0.0)),
-                      "All display values are zero");
+        // debug_assert!(!display_values.iter().all(|x| x.iter().all(|y| *y == 0.0)),
+        //               "All display values are zero");
 
 
         let channel0 = display_values[0].iter();
@@ -254,6 +254,7 @@ fn update_dynamic_items<T: Send + Sync>(
 #[cfg(test)]
 mod test {
     use std::sync::{Arc, Mutex, RwLock};
+    use std::sync::atomic::Ordering::Relaxed;
     use std::thread;
     use std::time;
     use std::time::Duration;
@@ -265,6 +266,7 @@ mod test {
     use crate::core::geometry::{Bounds2i, Point2i};
     use crate::core::pbrt::Float;
 
+    #[ignore]
     #[test]
     /// Manual test for tev remote
     fn display_remote() {
@@ -276,14 +278,15 @@ mod test {
             return;
         }
         let mut display = display.unwrap();
+        let exit_thread = display.exit_thread.clone();
         let resolution = Point2i { x: 200, y: 200 };
 
         let mut image: Vec<Pixel> = Vec::with_capacity(resolution.x as usize);
         for x in 0..resolution.x {
             for y in 0..resolution.y {
-                let color = (x * y) as Float / (resolution.x * resolution.y - 1) as Float;
+
                 let mut pixel = Pixel::default();
-                pixel.xyz = [color; 3];
+                pixel.xyz = [x as Float / resolution.x as Float, y as Float / resolution.y as Float, 0.0];
                 image.push(pixel);
             }
         }
@@ -328,7 +331,7 @@ mod test {
                 }
             }
             thread::sleep(time::Duration::from_millis(1000));
-            // display.disconnect_from_display_server();
+            exit_thread.store(true, Relaxed);
         })
             .unwrap();
     }
