@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'rs-pbrt'
-copyright = '2022, Jan Douglas Bert Walter'
+copyright = '2023, Jan Douglas Bert Walter'
 author = 'Jan Douglas Bert Walter'
 
 # The full version, including alpha/beta/rc tags

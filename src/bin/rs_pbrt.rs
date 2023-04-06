@@ -903,7 +903,7 @@ fn main() {
     let cropx1: f32 = args.cropx1;
     let cropy0: f32 = args.cropy0;
     let cropy1: f32 = args.cropy1;
-    println!("Copyright (c) 2016-2022 Jan Douglas Bert Walter.");
+    println!("Copyright (c) 2016-2023 Jan Douglas Bert Walter.");
     println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
     println!();
     let (mut api_state, mut bsdf_state) = pbrt_init(

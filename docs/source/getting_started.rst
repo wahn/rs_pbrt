@@ -160,7 +160,7 @@ render a `PNG`_ image (currently always being called ``pbrt.png``):
           # output
 	  rs_pbrt version 0.9.8 (unknown) [Detected 28 cores]
 	  
-          Copyright (c) 2016-2022 Jan Douglas Bert Walter.
+          Copyright (c) 2016-2023 Jan Douglas Bert Walter.
           Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.
 	  
           Film "image"
