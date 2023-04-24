@@ -18,9 +18,9 @@ atomic = "0.5.1"
 blend_info = "0.2.9"
 # blend_info = { path = "../blend_info" }
 byteorder = "1.4.3"
-clap = { version = "4.2.1", features = ["derive"] }
+clap = { version = "4.2.4", features = ["derive"] }
 crossbeam = "0.8.2"
-crossbeam-channel = "0.5.7"
+crossbeam-channel = "0.5.8"
 hexf = "0.2.1"
 image = "0.24.6"
 impl_ops = "0.1.1"
