@@ -1,5 +1,4 @@
 // std
-use std::borrow::Borrow;
 use std::cell::Cell;
 use std::sync::Arc;
 // pbrt
@@ -157,7 +156,7 @@ impl VolPathIntegrator {
                             light_distribution.lookup(&isect.common.p);
                         // Sample illumination from lights to find
                         // attenuated path contribution.
-                        let it: &SurfaceInteraction = isect.borrow();
+                        let it: &SurfaceInteraction = &isect;
                         l += beta
                             * uniform_sample_one_light(
                                 it,

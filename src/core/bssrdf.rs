@@ -3,7 +3,6 @@
 //! given incident differential irradiance at another point.
 
 //std
-use std::borrow::Borrow;
 use std::cell::Cell;
 use std::f32::consts::PI;
 use std::sync::Arc;
@@ -292,8 +291,8 @@ impl TabulatedBssrdf {
         }
         // no shape!
         // compute sample PDF and return the spatial BSSRDF term $\sp$
-        *pdf = self.pdf_sp(chain[selected].borrow()) / n_found as Float;
-        self.sp(chain[selected].borrow())
+        *pdf = self.pdf_sp(&chain[selected]) / n_found as Float;
+        self.sp(&chain[selected])
     }
     pub fn sr(&self, r: Float) -> Spectrum {
         let mut sr: Spectrum = Spectrum::default();
