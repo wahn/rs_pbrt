@@ -1,5 +1,4 @@
 // std
-use std::borrow::Borrow;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // others
@@ -203,8 +202,7 @@ impl SPPMIntegrator {
                                                         if depth == 0 || specular_bounce {
                                                             pixel.1 += beta * isect.le(&wo);
                                                         }
-                                                        let it: &SurfaceInteraction =
-                                                            isect.borrow();
+                                                        let it: &SurfaceInteraction = &isect;
                                                         pixel.1 += beta
                                                             * uniform_sample_one_light(
                                                                 it,
@@ -303,7 +301,7 @@ impl SPPMIntegrator {
                                 for _ in 0..bq.len() {
                                     let tile = pixel_rx.recv().unwrap();
                                     for (pixel_offset, ld, vp) in tile {
-                                        let mut pixel = &mut pixels[pixel_offset as usize];
+                                        let pixel = &mut pixels[pixel_offset as usize];
                                         pixel.ld += ld;
                                         pixel.vp.p = vp.p;
                                         pixel.vp.wo = vp.wo;

@@ -2279,7 +2279,7 @@ pub fn connect_bdpt<'a>(
                 // initialize dynamically sampled vertex and _L_ for $t=1$ case
                 sampled = Vertex::create_camera_from_interaction(
                     camera,
-                    vis.p1.as_ref().unwrap().clone(),
+                    vis.p1.as_ref().unwrap(),
                     &(wi_color / pdf),
                 );
                 l = light_vertices[s - 1].beta
@@ -2355,7 +2355,7 @@ pub fn connect_bdpt<'a>(
             );
             if pdf > 0.0 as Float && !light_weight.is_black() {
                 let ei: EndpointInteraction = EndpointInteraction::new_interaction_from_light(
-                    vis.p1.as_ref().unwrap().clone(),
+                    vis.p1.as_ref().unwrap(),
                     &scene.lights[light_num],
                 );
                 sampled = Vertex::create_light_interaction(

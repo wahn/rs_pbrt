@@ -1,5 +1,4 @@
 // std
-use std::borrow::Borrow;
 use std::cell::Cell;
 use std::sync::Arc;
 // pbrt
@@ -123,7 +122,7 @@ impl PathIntegrator {
                     if let Some(ref bsdf) = isect.bsdf {
                         if bsdf.num_components(bsdf_flags) > 0 {
                             // TODO: ++total_paths;
-                            let it: &SurfaceInteraction = isect.borrow();
+                            let it: &SurfaceInteraction = &isect;
                             let ld: Spectrum = beta
                                 * uniform_sample_one_light(
                                     it,

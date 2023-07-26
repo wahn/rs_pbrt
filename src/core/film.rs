@@ -357,7 +357,7 @@ impl Film {
             let offset: i32 = (pixel.x - self.cropped_pixel_bounds.p_min.x)
                 + (pixel.y - self.cropped_pixel_bounds.p_min.y) * width;
             let mut pixels_write = self.pixels.write().unwrap();
-            let mut merge_pixel = &mut pixels_write[offset as usize];
+            let merge_pixel = &mut pixels_write[offset as usize];
             // END let mut merge_pixel: &mut Pixel = self.get_pixel_mut(pixel);
             let mut xyz: [Float; 3] = [0.0; 3];
             tile_pixel.contrib_sum.to_xyz(&mut xyz);
@@ -373,7 +373,7 @@ impl Film {
         let n_pixels: i32 = self.cropped_pixel_bounds.area();
         let mut pixels_write = self.pixels.write().unwrap();
         for i in 0..n_pixels as usize {
-            let mut merge_pixel = &mut pixels_write[i];
+            let merge_pixel = &mut pixels_write[i];
             let mut xyz: [Float; 3] = [0.0; 3];
             img[i].to_xyz(&mut xyz);
             for (i, item) in xyz.iter().enumerate() {
