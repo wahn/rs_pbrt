@@ -100,7 +100,7 @@ impl TabulatedBssrdf {
         )
     }
     pub fn sp(&self, pi: &SurfaceInteraction) -> Spectrum {
-        self.sr(pnt3_distancef(&self.po_p, &pi.get_p()))
+        self.sr(pnt3_distancef(&self.po_p, pi.get_p()))
     }
     pub fn pdf_sp(&self, pi: &SurfaceInteraction) -> Float {
         // express $\pti-\pto$ and $\bold{n}_i$ with respect to local coordinates at $\pto$
@@ -112,9 +112,9 @@ impl TabulatedBssrdf {
         };
         let pi_n = pi.get_n();
         let n_local: Normal3f = Normal3f {
-            x: vec3_dot_nrmf(&self.ss, &pi_n),
-            y: vec3_dot_nrmf(&self.ts, &pi_n),
-            z: nrm_dot_nrmf(&self.ns, &pi_n),
+            x: vec3_dot_nrmf(&self.ss, pi_n),
+            y: vec3_dot_nrmf(&self.ts, pi_n),
+            z: nrm_dot_nrmf(&self.ns, pi_n),
         };
         // compute BSSRDF profile radius under projection along each axis
         let r_proj: [Float; 3] = [
@@ -190,9 +190,11 @@ impl TabulatedBssrdf {
         }
         let l: Float = 2.0 as Float * (r_max * r_max - r * r).sqrt();
         // compute BSSRDF sampling ray segment
-        let mut base: InteractionCommon = InteractionCommon::default();
-        base.p = self.po_p + (vx * phi.cos() + vy * phi.sin()) * r - vz * (l * 0.5 as Float);
-        base.time = self.po_time;
+        let mut base: InteractionCommon = InteractionCommon {
+            p: self.po_p + (vx * phi.cos() + vy * phi.sin()) * r - vz * (l * 0.5 as Float),
+            time: self.po_time,
+            ..Default::default()
+        };
         let p_target: Point3f = base.p + vz * l;
 
         // intersect BSSRDF sampling ray against the scene geometry
@@ -209,12 +211,12 @@ impl TabulatedBssrdf {
         let mut chain: Vec<SurfaceInteraction> = Vec::new();
         let mut n_found: usize = 0;
         loop {
-            let mut r: Ray = base.spawn_ray_to_pnt(&p_target);
+            let r: Ray = base.spawn_ray_to_pnt(&p_target);
             if r.d == Vector3f::default() {
                 break;
             }
             let mut si: SurfaceInteraction = SurfaceInteraction::default();
-            if scene.intersect(&mut r, &mut si) {
+            if scene.intersect(&r, &mut si) {
                 // base = ptr->si;
                 base.p = *si.get_p();
                 base.time = si.get_time();
@@ -247,11 +249,7 @@ impl TabulatedBssrdf {
         if n_found == 0_usize {
             return Spectrum::default();
         }
-        let selected: usize = clamp_t(
-            (u1 * n_found as Float) as usize,
-            0_usize,
-            (n_found - 1) as usize,
-        );
+        let selected: usize = clamp_t((u1 * n_found as Float) as usize, 0_usize, n_found - 1);
         // while (selected-- > 0) chain = chain->next;
         // *pi = chain->si;
         let selected_si: &SurfaceInteraction = &chain[selected];

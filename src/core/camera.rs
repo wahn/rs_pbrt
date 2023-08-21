@@ -106,9 +106,8 @@ impl Camera {
         }
     }
     pub fn adjust_to_clipping_start(&self, sample: &CameraSample, ray: &mut Ray) {
-        match self {
-            Camera::Perspective(camera) => camera.adjust_to_clipping_start(sample, ray),
-            _ => {}
+        if let Camera::Perspective(camera) = self {
+            camera.adjust_to_clipping_start(sample, ray)
         }
     }
 }

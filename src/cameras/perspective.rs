@@ -430,7 +430,7 @@ impl PerspectiveCamera {
         };
         *pdf = (dist * dist) / (nrm_abs_dot_vec3f(&lens_intr.n, wi) * lens_area);
         let ray = lens_intr.spawn_ray(&-*wi);
-        vis.p0 = Some(&iref);
+        vis.p0 = Some(iref);
         vis.p1 = Some(lens_intr);
         self.we(&ray, Some(p_raster))
     }

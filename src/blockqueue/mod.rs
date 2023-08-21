@@ -33,7 +33,7 @@ impl BlockQueue {
         let mut blocks: Vec<(u32, u32)> = (0..num_blocks.0 * num_blocks.1)
             .map(|i| (i % num_blocks.0, i / num_blocks.0))
             .collect();
-        blocks.sort_by(|a, b| morton2(*a).cmp(&morton2(*b)));
+	blocks.sort_by_key(|a| morton2(*a));
         // If we're only rendering a subset of the blocks then filter our list down
         if select_blocks.1 > 0 {
             blocks = blocks
@@ -92,9 +92,9 @@ impl<'a> Iterator for BlockQueueIterator<'a> {
 
 // see github/tray_rust/src/sampler/morton.rs
 
-///! Provides utilities for 2D Morton code generation using Fabian
-///! Giesen's Morton code decoding functions, see [his post on Morton
-///! codes](https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/)
+// Provides utilities for 2D Morton code generation using Fabian
+// Giesen's Morton code decoding functions, see [his post on Morton
+// codes](https://fgiesen.wordpress.com/2009/12/13/decoding-morton-codes/)
 
 /// Insert a 0 bit between each of the low 16 bits of x
 fn part1_by1(mut x: u32) -> u32 {

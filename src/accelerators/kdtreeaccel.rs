@@ -222,7 +222,7 @@ impl KdTreeAccel {
         };
         KdTreeAccel::build_tree(
             &mut kd_tree,
-            0 as i32,
+            0_i32,
             &bounds,
             &prim_bounds,
             &prim_nums[..],
@@ -508,7 +508,7 @@ impl KdTreeAccel {
         // compute initial parametric range of ray inside kd-tree extent
         let mut t_min: Float = 0.0;
         let mut t_max: Float = 0.0;
-        if !self.bounds.intersect_b(&ray, &mut t_min, &mut t_max) {
+        if !self.bounds.intersect_b(ray, &mut t_min, &mut t_max) {
             return false;
         }
         // prepare to traverse kd-tree for ray
@@ -626,7 +626,7 @@ impl KdTreeAccel {
         // compute initial parametric range of ray inside kd-tree extent
         let mut t_min: Float = 0.0;
         let mut t_max: Float = 0.0;
-        if !self.bounds.intersect_b(&ray, &mut t_min, &mut t_max) {
+        if !self.bounds.intersect_b(ray, &mut t_min, &mut t_max) {
             return false;
         }
         // prepare to traverse kd-tree for ray

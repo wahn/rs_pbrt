@@ -518,7 +518,7 @@ impl Film {
         }
         // write "pbrt.png" to disk
         image::save_buffer(
-            &Path::new("pbrt.png"),
+            Path::new("pbrt.png"),
             &buffer,
             width,
             height,

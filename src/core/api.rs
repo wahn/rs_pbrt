@@ -102,16 +102,9 @@ use crate::textures::wrinkled::WrinkledTexture;
 
 // see api.cpp
 
+#[derive(Default)]
 pub struct BsdfState {
     pub loaded_bsdfs: HashMap<String, Arc<FourierBSDFTable>>,
-}
-
-impl Default for BsdfState {
-    fn default() -> Self {
-        BsdfState {
-            loaded_bsdfs: HashMap::new(),
-        }
-    }
 }
 
 pub struct ApiState {
@@ -217,14 +210,15 @@ impl RenderOptions {
         let mut some_integrator: Option<Box<Integrator>> = None;
         let some_camera: Option<Arc<Camera>> = self.make_camera();
         if let Some(camera) = some_camera {
-            let some_sampler: Option<Box<Sampler>>;
-            if pixelsamples != 0_u32 {
+            let some_sampler: Option<Box<Sampler>> = if pixelsamples != 0_u32 {
                 // copy all bool and integer values, except pixelsamples
-                let mut new_sampler_params: ParamSet = ParamSet::default();
-                new_sampler_params.key_word = self.sampler_params.key_word.clone();
-                new_sampler_params.name = self.sampler_params.name.clone();
-                new_sampler_params.tex_type = self.sampler_params.tex_type.clone();
-                new_sampler_params.tex_name = self.sampler_params.tex_name.clone();
+                let mut new_sampler_params: ParamSet = ParamSet {
+                    key_word: self.sampler_params.key_word.clone(),
+                    name: self.sampler_params.name.clone(),
+                    tex_type: self.sampler_params.tex_type.clone(),
+                    tex_name: self.sampler_params.tex_name.clone(),
+                    ..Default::default()
+                };
                 for b in &self.sampler_params.bools {
                     new_sampler_params.add_bool(b.name.clone(), b.values[0]);
                 }
@@ -236,12 +230,10 @@ impl RenderOptions {
                     }
                 }
                 print_params(&new_sampler_params);
-                some_sampler =
-                    make_sampler(&self.sampler_name, &new_sampler_params, camera.get_film());
+                make_sampler(&self.sampler_name, &new_sampler_params, camera.get_film())
             } else {
-                some_sampler =
-                    make_sampler(&self.sampler_name, &self.sampler_params, camera.get_film());
-            }
+                make_sampler(&self.sampler_name, &self.sampler_params, camera.get_film())
+            };
             if let Some(sampler) = some_sampler {
                 // if let Some(integrator_name) = integrator_arg {
                 let integrator_name: String;
@@ -296,8 +288,8 @@ impl RenderOptions {
                     let pb: Vec<i32> = self.integrator_params.find_int("pixelbounds");
                     let np: usize = pb.len();
                     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                    if np > 0 as usize {
-                        if np != 4 as usize {
+                    if np > 0_usize {
+                        if np != 4_usize {
                             panic!(
                                 "Expected four values for \"pixelbounds\" parameter. Got {}.",
                                 np
@@ -333,8 +325,8 @@ impl RenderOptions {
                     let pb: Vec<i32> = self.integrator_params.find_int("pixelbounds");
                     let np: usize = pb.len();
                     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                    if np > 0 as usize {
-                        if np != 4 as usize {
+                    if np > 0_usize {
+                        if np != 4_usize {
                             panic!(
                                 "Expected four values for \"pixelbounds\" parameter. Got {}.",
                                 np
@@ -421,8 +413,8 @@ impl RenderOptions {
                     let pb: Vec<i32> = self.integrator_params.find_int("pixelbounds");
                     let np: usize = pb.len();
                     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                    if np > 0 as usize {
-                        if np != 4 as usize {
+                    if np > 0_usize {
+                        if np != 4_usize {
                             panic!(
                                 "Expected four values for \"pixelbounds\" parameter. Got {}.",
                                 np
@@ -436,7 +428,7 @@ impl RenderOptions {
                         }
                     }
                     let cos_sample: bool = self.integrator_params.find_one_bool("cossample", true);
-                    let n_samples: i32 = self.integrator_params.find_one_int("nsamples", 64 as i32);
+                    let n_samples: i32 = self.integrator_params.find_one_int("nsamples", 64_i32);
                     let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::AO(
                         AOIntegrator::new(cos_sample, n_samples, camera, sampler, pixel_bounds),
                     )));
@@ -667,7 +659,9 @@ fn create_material(api_state: &ApiState, bsdf_state: &mut BsdfState) -> Option<A
         }
     } else {
         // MakeMaterial
-        if api_state.graphics_state.material == "" || api_state.graphics_state.material == "none" {
+        if api_state.graphics_state.material.is_empty()
+            || api_state.graphics_state.material == "none"
+        {
             return None;
         } else if api_state.graphics_state.material == "matte" {
             return Some(MatteMaterial::create(&mut mp));
@@ -739,7 +733,7 @@ fn create_material(api_state: &ApiState, bsdf_state: &mut BsdfState) -> Option<A
 
 fn create_medium_interface(api_state: &ApiState) -> MediumInterface {
     let mut m: MediumInterface = MediumInterface::default();
-    if api_state.graphics_state.current_inside_medium != "" {
+    if !api_state.graphics_state.current_inside_medium.is_empty() {
         match api_state
             .render_options
             .named_media
@@ -754,7 +748,7 @@ fn create_medium_interface(api_state: &ApiState) -> MediumInterface {
             }
         }
     }
-    if api_state.graphics_state.current_outside_medium != "" {
+    if !api_state.graphics_state.current_outside_medium.is_empty() {
         match api_state
             .render_options
             .named_media
@@ -931,7 +925,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
         let mut texmap: String = api_state
             .param_set
             .find_one_filename("mapname", String::from(""));
-        if texmap != "" {
+        if !texmap.is_empty() {
             if let Some(ref search_directory) = api_state.search_directory {
                 // texmap = AbsolutePath(ResolveFilename(texmap));
                 let mut path_buf: PathBuf = PathBuf::from("/");
@@ -940,7 +934,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
                 texmap = String::from(path_buf.to_str().unwrap());
             }
         }
-        let n_samples: i32 = api_state.param_set.find_one_int("nsamples", 1 as i32);
+        let n_samples: i32 = api_state.param_set.find_one_int("nsamples", 1_i32);
         // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
 
         // return std::make_shared<InfiniteAreaLight>(light2world, L * sc, nSamples, texmap);
@@ -958,7 +952,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
 
 fn make_medium(api_state: &mut ApiState) {
     let medium_type: String = api_state.param_set.find_one_string("type", String::new());
-    if medium_type == "" {
+    if medium_type.is_empty() {
         panic!("ERROR: No parameter string \"type\" found in MakeNamedMedium");
     }
     // MakeMedium (api.cpp:685)
@@ -968,7 +962,7 @@ fn make_medium(api_state: &mut ApiState) {
     let mut sig_s: Spectrum = Spectrum::from_rgb(&sig_s_rgb);
     let preset: String = api_state.param_set.find_one_string("preset", String::new());
     let found: bool = get_medium_scattering_properties(&preset, &mut sig_a, &mut sig_s);
-    if preset != "" && !found {
+    if !preset.is_empty() && !found {
         println!(
             "WARNING: Material preset \"{:?}\" not found.  Using defaults.",
             preset
@@ -1644,7 +1638,7 @@ pub fn make_camera(
     let medium_interface: MediumInterface = MediumInterface::default();
     if camera_name == "perspective" {
         let camera: Arc<Camera> = PerspectiveCamera::create(
-            &camera_params,
+            camera_params,
             animated_cam_to_world,
             film,
             medium_interface.outside,
@@ -1653,7 +1647,7 @@ pub fn make_camera(
         some_camera = Some(camera);
     } else if camera_name == "orthographic" {
         let camera: Arc<Camera> = OrthographicCamera::create(
-            &camera_params,
+            camera_params,
             animated_cam_to_world,
             film,
             medium_interface.outside,
@@ -1672,7 +1666,7 @@ pub fn make_camera(
         //     some_camera = Some(camera);
         // } else {
         let camera: Arc<Camera> = RealisticCamera::create(
-            &camera_params,
+            camera_params,
             animated_cam_to_world,
             film,
             medium_interface.outside,
@@ -1683,7 +1677,7 @@ pub fn make_camera(
     // }
     } else if camera_name == "environment" {
         let camera: Arc<Camera> = EnvironmentCamera::create(
-            &camera_params,
+            camera_params,
             animated_cam_to_world,
             film,
             medium_interface.outside,
@@ -1779,7 +1773,7 @@ fn get_shapes_and_materials(
         m_inv: api_state.cur_transform.t[0].m_inv,
     };
     let world_to_obj = if api_state.cur_transform.is_animated() {
-        if api_state.graphics_state.area_light != "" {
+        if !api_state.graphics_state.area_light.is_empty() {
             println!("WARNING: Ignoring currently set area light when creating animated shape",);
         }
         // set both transforms to identity
@@ -1807,7 +1801,7 @@ fn get_shapes_and_materials(
             z_max,
             phi_max,
         )));
-        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<Material>> = create_material(api_state, bsdf_state);
         shapes.push(sphere);
         materials.push(mtl);
     } else if api_state.param_set.name == "cylinder" {
@@ -1824,7 +1818,7 @@ fn get_shapes_and_materials(
             z_max,
             phi_max,
         )));
-        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<Material>> = create_material(api_state, bsdf_state);
         shapes.push(cylinder);
         materials.push(mtl);
     } else if api_state.param_set.name == "disk" {
@@ -1841,7 +1835,7 @@ fn get_shapes_and_materials(
             inner_radius,
             phi_max,
         )));
-        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<Material>> = create_material(api_state, bsdf_state);
         shapes.push(disk);
         materials.push(mtl);
     } else if api_state.param_set.name == "cone" {
@@ -1851,7 +1845,7 @@ fn get_shapes_and_materials(
     } else if api_state.param_set.name == "hyperboloid" {
         println!("TODO: CreateHyperboloidShape");
     } else if api_state.param_set.name == "curve" {
-        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<Material>> = create_material(api_state, bsdf_state);
         let curve_shapes: Vec<Arc<Shape>> = create_curve_shape(
             &obj_to_world,
             &world_to_obj,
@@ -1901,7 +1895,7 @@ fn get_shapes_and_materials(
             // transform tangents to world space
             let n_tangents: usize = s.len();
             for item in s.iter().take(n_tangents) {
-                s_ws.push(obj_to_world.transform_vector(&item));
+                s_ws.push(obj_to_world.transform_vector(item));
             }
         }
         let n = api_state.param_set.find_normal3f("N");
@@ -1911,7 +1905,7 @@ fn get_shapes_and_materials(
             // transform normals to world space
             let n_normals: usize = n.len();
             for item in n.iter().take(n_normals) {
-                n_ws.push(obj_to_world.transform_normal(&item));
+                n_ws.push(obj_to_world.transform_normal(item));
             }
         }
         for item in &vi {
@@ -1926,7 +1920,7 @@ fn get_shapes_and_materials(
         // look up an alpha texture, if applicable
         let mut alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
         let alpha_tex_name: String = api_state.param_set.find_texture("alpha");
-        if alpha_tex_name != "" {
+        if !alpha_tex_name.is_empty() {
             alpha_tex = match api_state
                 .graphics_state
                 .float_textures
@@ -1946,7 +1940,7 @@ fn get_shapes_and_materials(
         }
         let mut shadow_alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
         let shadow_alpha_tex_name: String = api_state.param_set.find_texture("shadowalpha");
-        if shadow_alpha_tex_name != "" {
+        if !shadow_alpha_tex_name.is_empty() {
             shadow_alpha_tex = match api_state
                 .graphics_state
                 .float_textures
@@ -1973,7 +1967,7 @@ fn get_shapes_and_materials(
         let mut p_ws: Vec<Point3f> = Vec::new();
         let n_vertices: usize = p.len();
         for item in p.iter().take(n_vertices) {
-            p_ws.push(obj_to_world.transform_point(&item));
+            p_ws.push(obj_to_world.transform_point(item));
         }
         // vertex indices are expected as usize, not i32
         let mut vertex_indices: Vec<u32> = Vec::new();
@@ -1994,18 +1988,15 @@ fn get_shapes_and_materials(
             alpha_tex,
             shadow_alpha_tex,
         ));
-        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<Material>> = create_material(api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
-            let triangle = Arc::new(Shape::Trngl(Triangle::new(
-                mesh.clone(),
-                id.try_into().unwrap(),
-            )));
+            let triangle = Arc::new(Shape::Trngl(Triangle::new(mesh.clone(), id)));
             shapes.push(triangle.clone());
             materials.push(mtl.clone());
         }
     } else if api_state.param_set.name == "plymesh" {
         if let Some(ref search_directory) = api_state.search_directory {
-            let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
+            let mtl: Option<Arc<Material>> = create_material(api_state, bsdf_state);
             let ply_shapes: Vec<Arc<Shape>> = create_ply_mesh(
                 &obj_to_world,
                 &world_to_obj,
@@ -2050,12 +2041,9 @@ fn get_shapes_and_materials(
             &vertex_indices,
             &p,
         );
-        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<Material>> = create_material(api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
-            let triangle = Arc::new(Shape::Trngl(Triangle::new(
-                mesh.clone(),
-                id.try_into().unwrap(),
-            )));
+            let triangle = Arc::new(Shape::Trngl(Triangle::new(mesh.clone(), id)));
             shapes.push(triangle.clone());
             materials.push(mtl.clone());
         }
@@ -2198,8 +2186,8 @@ fn get_shapes_and_materials(
         let n_tris: usize = 2 * (diceu - 1) * (dicev - 1);
         let mut vertices: Vec<u32> = Vec::with_capacity(3 * n_tris);
         // compute the vertex offset numbers for the triangles
-        for v in 0_usize..(dicev - 1) as usize {
-            for u in 0_usize..(diceu - 1) as usize {
+        for v in 0_usize..(dicev - 1) {
+            for u in 0_usize..(diceu - 1) {
                 vertices.push((v * diceu + u).try_into().unwrap());
                 vertices.push((v * diceu + u + 1).try_into().unwrap());
                 vertices.push(((v + 1) * diceu + u + 1).try_into().unwrap());
@@ -2212,13 +2200,13 @@ fn get_shapes_and_materials(
         let mut p_ws: Vec<Point3f> = Vec::new();
         let n_vertices: usize = eval_ps.len();
         for item in eval_ps.iter().take(n_vertices) {
-            p_ws.push(obj_to_world.transform_point(&item));
+            p_ws.push(obj_to_world.transform_point(item));
         }
         // transform normals to world space
         let mut n_ws: Vec<Normal3f> = Vec::new();
         let n_normals: usize = eval_ns.len();
         for item in eval_ns.iter().take(n_normals) {
-            n_ws.push(obj_to_world.transform_normal(&item));
+            n_ws.push(obj_to_world.transform_normal(item));
         }
         let mesh = Arc::new(TriangleMesh::new(
             obj_to_world,
@@ -2234,12 +2222,9 @@ fn get_shapes_and_materials(
             None,
             None,
         ));
-        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<Material>> = create_material(api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
-            let triangle = Arc::new(Shape::Trngl(Triangle::new(
-                mesh.clone(),
-                id.try_into().unwrap(),
-            )));
+            let triangle = Arc::new(Shape::Trngl(Triangle::new(mesh.clone(), id)));
             shapes.push(triangle.clone());
             materials.push(mtl.clone());
         }
@@ -2758,7 +2743,7 @@ pub fn pbrt_make_named_material(
     // print_params(&params);
     api_state.param_set = params;
     let mat_type: String = api_state.param_set.find_one_string("type", String::new());
-    if mat_type == "" {
+    if mat_type.is_empty() {
         panic!("No parameter string \"type\" found in MakeNamedMaterial");
     }
     api_state.graphics_state.material = mat_type.clone();
@@ -2767,7 +2752,7 @@ pub fn pbrt_make_named_material(
         .material_params
         .copy_from(&api_state.param_set);
     api_state.graphics_state.current_material = String::new();
-    let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
+    let mtl: Option<Arc<Material>> = create_material(api_state, bsdf_state);
     if let Some(_named_material) = api_state
         .graphics_state
         .named_materials
@@ -2789,7 +2774,7 @@ pub fn pbrt_light_source(api_state: &mut ApiState, params: ParamSet) {
     // println!("LightSource \"{}\"", params.name);
     // print_params(&params);
     api_state.param_set = params;
-    let mi: MediumInterface = create_medium_interface(&api_state);
+    let mi: MediumInterface = create_medium_interface(api_state);
     make_light(api_state, &mi);
 }
 
@@ -2818,10 +2803,10 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
             || api_state.graphics_state.area_light == "diffuse"
         {
             // first create the shape
-            let (shapes, materials) = get_shapes_and_materials(&api_state, bsdf_state);
+            let (shapes, materials) = get_shapes_and_materials(api_state, bsdf_state);
             assert_eq!(shapes.len(), materials.len());
             // MediumInterface
-            let mi: MediumInterface = create_medium_interface(&api_state);
+            let mi: MediumInterface = create_medium_interface(api_state);
             for i in 0..shapes.len() {
                 let shape = &shapes[i];
                 let material = &materials[i];
@@ -2868,10 +2853,10 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
         }
     } else {
         // continue with shape itself
-        let (shapes, materials) = get_shapes_and_materials(&api_state, bsdf_state);
+        let (shapes, materials) = get_shapes_and_materials(api_state, bsdf_state);
         assert_eq!(shapes.len(), materials.len());
         // MediumInterface
-        let mi: MediumInterface = create_medium_interface(&api_state);
+        let mi: MediumInterface = create_medium_interface(api_state);
         for i in 0..shapes.len() {
             let shape = &shapes[i];
             let material = &materials[i];
@@ -2909,7 +2894,7 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
         }
     }
     // add _prims_ and _areaLights_ to scene or current instance
-    if api_state.render_options.current_instance != "" {
+    if !api_state.render_options.current_instance.is_empty() {
         if !area_lights.is_empty() {
             println!("WARNING: Area lights not supported with object instancing");
         }
@@ -3017,7 +3002,7 @@ pub fn pbrt_object_begin(api_state: &mut ApiState, params: ParamSet) {
     // println!("ObjectBegin \"{}\"", params.name);
     api_state.param_set = params;
     pbrt_attribute_begin(api_state);
-    if api_state.render_options.current_instance != "" {
+    if !api_state.render_options.current_instance.is_empty() {
         println!("ERROR: ObjectBegin called inside of instance definition");
     }
     api_state
@@ -3029,7 +3014,7 @@ pub fn pbrt_object_begin(api_state: &mut ApiState, params: ParamSet) {
 
 pub fn pbrt_object_end(api_state: &mut ApiState) {
     // println!("ObjectEnd");
-    if api_state.render_options.current_instance == "" {
+    if api_state.render_options.current_instance.is_empty() {
         println!("ERROR: ObjectEnd called outside of instance definition");
     }
     api_state.render_options.current_instance = String::from("");
@@ -3040,7 +3025,7 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
     // println!("ObjectInstance \"{}\"", params.name);
     api_state.param_set = params;
     // perform object instance error checking
-    if api_state.render_options.current_instance != "" {
+    if !api_state.render_options.current_instance.is_empty() {
         println!("ERROR: ObjectInstance can't be called inside instance definition");
         return;
     }

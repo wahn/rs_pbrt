@@ -19,10 +19,8 @@ pub fn quadratic_efloat(a: EFloat, b: EFloat, c: EFloat, t0: &mut EFloat, t1: &m
         false
     } else {
         let root_discrim: f64 = discrim.sqrt();
-        let float_root_discrim: EFloat = EFloat::new(
-            root_discrim as f32,
-            MACHINE_EPSILON as f32 * root_discrim as f32,
-        );
+        let float_root_discrim: EFloat =
+            EFloat::new(root_discrim as f32, MACHINE_EPSILON * root_discrim as f32);
         // compute quadratic _t_ values
         let q = if b.v < 0.0f32 {
             (b - float_root_discrim) * -0.5f32
@@ -31,7 +29,7 @@ pub fn quadratic_efloat(a: EFloat, b: EFloat, c: EFloat, t0: &mut EFloat, t1: &m
         };
         *t0 = q / a;
         *t1 = c / q;
-        if (*t0).v > (*t1).v {
+        if t0.v > t1.v {
             std::mem::swap(&mut (*t0), &mut (*t1));
         }
         true

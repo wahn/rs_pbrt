@@ -155,7 +155,7 @@ impl RealisticCamera {
         assert!(shutterclose >= shutteropen);
         // realistic camera-specific parameters
         let mut lens_file: String = params.find_one_filename("lensfile", String::from(""));
-        if lens_file != "" {
+        if !lens_file.is_empty() {
             if let Some(ref search_directory) = search_directory {
                 let mut path_buf: PathBuf = PathBuf::from("/");
                 path_buf.push(search_directory);
@@ -163,7 +163,7 @@ impl RealisticCamera {
                 lens_file = String::from(path_buf.to_str().unwrap());
             }
         }
-        if lens_file == "" {
+        if lens_file.is_empty() {
             println!("ERROR: No lens description file supplied!");
         } else {
             println!("lens_file = {:?}", lens_file);
@@ -219,17 +219,19 @@ impl RealisticCamera {
             sample.p_lens,
             &mut exit_pupil_bounds_area,
         );
-        let mut r_film: Ray = Ray::default();
-        r_film.o = p_film;
-        r_film.d = p_rear - p_film;
-        r_film.t_max = Cell::new(std::f32::INFINITY);
-        r_film.time = lerp(sample.time, self.shutter_open, self.shutter_close);
+        let r_film: Ray = Ray {
+            o: p_film,
+            d: p_rear - p_film,
+            t_max: Cell::new(std::f32::INFINITY),
+            time: lerp(sample.time, self.shutter_open, self.shutter_close),
+            ..Default::default()
+        };
         if !self.trace_lenses_from_film(&r_film, Some(ray)) {
             // ++vignettedRays;
             return 0.0 as Float;
         }
         // finish initialization of _RealisticCamera_ ray
-        *ray = self.camera_to_world.transform_ray(&ray);
+        *ray = self.camera_to_world.transform_ray(ray);
         ray.d = ray.d.normalize();
         if let Some(ref medium_arc) = self.medium {
             ray.medium = Some(medium_arc.clone());
@@ -597,8 +599,8 @@ impl RealisticCamera {
                 z: 0.0 as Float,
             };
             let u: [Float; 2] = [
-                radical_inverse(0 as u16, i as u64),
-                radical_inverse(1 as u16, i as u64),
+                radical_inverse(0_u16, i as u64),
+                radical_inverse(1_u16, i as u64),
             ];
             let p_rear: Point3f = Point3f {
                 x: lerp(u[0], proj_rear_bounds.p_min.x, proj_rear_bounds.p_max.x),

@@ -40,7 +40,7 @@ impl BVHPrimitiveInfo {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct BVHBuildNode<'a> {
     pub bounds: Bounds3f,
     pub child1: Option<&'a BVHBuildNode<'a>>,
@@ -48,19 +48,6 @@ pub struct BVHBuildNode<'a> {
     pub split_axis: u8,
     pub first_prim_offset: usize,
     pub n_primitives: usize,
-}
-
-impl<'a> Default for BVHBuildNode<'a> {
-    fn default() -> Self {
-        BVHBuildNode {
-            bounds: Bounds3f::default(),
-            child1: None,
-            child2: None,
-            split_axis: 0_u8,
-            first_prim_offset: 0_usize,
-            n_primitives: 0_usize,
-        }
-    }
 }
 
 impl<'a> BVHBuildNode<'a> {
@@ -80,19 +67,10 @@ impl<'a> BVHBuildNode<'a> {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 struct BucketInfo {
     count: usize,
     bounds: Bounds3f,
-}
-
-impl Default for BucketInfo {
-    fn default() -> Self {
-        BucketInfo {
-            count: 0_usize,
-            bounds: Bounds3f::default(),
-        }
-    }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -377,8 +355,8 @@ impl BVHAccel {
         }
         node
     }
-    pub fn flatten_bvh_tree<'a>(
-        node: &BVHBuildNode<'a>,
+    pub fn flatten_bvh_tree(
+        node: &BVHBuildNode,
         nodes: &mut Vec<LinearBVHNode>,
         offset: &mut usize,
     ) -> usize {
@@ -396,10 +374,10 @@ impl BVHAccel {
             nodes[my_offset] = linear_node;
         } else {
             // interior
-            if let Some(ref child1) = node.child1 {
+            if let Some(child1) = node.child1 {
                 BVHAccel::flatten_bvh_tree(child1, nodes, offset);
             }
-            if let Some(ref child2) = node.child2 {
+            if let Some(child2) = node.child2 {
                 let linear_node = LinearBVHNode {
                     bounds: node.bounds,
                     offset: BVHAccel::flatten_bvh_tree(child2, nodes, offset) as i32,
