@@ -115,7 +115,7 @@
 //! antialiasing.
 //!
 //! In Rust we don't have inheritance, therefore we use an
-//! **Option<RayDifferential>** in the **Ray** struct, which means the
+//! **`Option<RayDifferential>`** in the **Ray** struct, which means the
 //! additional information can be present (or not).
 //!
 //! # Bounding Boxes
