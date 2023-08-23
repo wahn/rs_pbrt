@@ -216,15 +216,17 @@ impl Disk {
             y: pd.y * self.radius,
             z: self.height,
         };
-        let mut it: InteractionCommon = InteractionCommon::default();
-        it.n = self
-            .object_to_world
-            .transform_normal(&Normal3f {
-                x: 0.0 as Float,
-                y: 0.0 as Float,
-                z: 1.0 as Float,
-            })
-            .normalize();
+        let mut it: InteractionCommon = InteractionCommon {
+            n: self
+                .object_to_world
+                .transform_normal(&Normal3f {
+                    x: 0.0 as Float,
+                    y: 0.0 as Float,
+                    z: 1.0 as Float,
+                })
+                .normalize(),
+            ..Default::default()
+        };
         if self.reverse_orientation {
             it.n *= -1.0 as Float;
         }
@@ -266,7 +268,7 @@ impl Disk {
         let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
         if self.intersect(&ray, &mut t_hit, &mut isect_light) {
             // convert light sample weight to solid angle measure
-            let mut pdf: Float = pnt3_distance_squaredf(&iref.get_p(), &isect_light.common.p)
+            let mut pdf: Float = pnt3_distance_squaredf(iref.get_p(), &isect_light.common.p)
                 / (nrm_abs_dot_vec3f(&isect_light.common.n, &-(*wi)) * self.area());
             if pdf.is_infinite() {
                 pdf = 0.0 as Float;

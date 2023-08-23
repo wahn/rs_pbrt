@@ -111,16 +111,16 @@ impl Sphere {
         // compute quadratic sphere coefficients
 
         // initialize _EFloat_ ray coordinate values
-        let ox = EFloat::new(ray.o.x as f32, o_err.x as f32);
-        let oy = EFloat::new(ray.o.y as f32, o_err.y as f32);
-        let oz = EFloat::new(ray.o.z as f32, o_err.z as f32);
-        let dx = EFloat::new(ray.d.x as f32, d_err.x as f32);
-        let dy = EFloat::new(ray.d.y as f32, d_err.y as f32);
-        let dz = EFloat::new(ray.d.z as f32, d_err.z as f32);
+        let ox = EFloat::new(ray.o.x, o_err.x);
+        let oy = EFloat::new(ray.o.y, o_err.y);
+        let oz = EFloat::new(ray.o.z, o_err.z);
+        let dx = EFloat::new(ray.d.x, d_err.x);
+        let dy = EFloat::new(ray.d.y, d_err.y);
+        let dz = EFloat::new(ray.d.z, d_err.z);
         let a: EFloat = dx * dx + dy * dy + dz * dz;
         let b: EFloat = (dx * ox + dy * oy + dz * oz) * 2.0f32;
         let c: EFloat = ox * ox + oy * oy + oz * oz
-            - EFloat::new(self.radius as f32, 0.0) * EFloat::new(self.radius as f32, 0.0);
+            - EFloat::new(self.radius, 0.0) * EFloat::new(self.radius, 0.0);
 
         // solve quadratic equation for _t_ values
         let mut t0: EFloat = EFloat::default();
@@ -129,13 +129,13 @@ impl Sphere {
             return false;
         }
         // check quadric shape _t0_ and _t1_ for nearest intersection
-        if t0.upper_bound() > ray.t_max.get() as f32 || t1.lower_bound() <= 0.0f32 {
+        if t0.upper_bound() > ray.t_max.get() || t1.lower_bound() <= 0.0f32 {
             return false;
         }
         let mut t_shape_hit: EFloat = t0;
         if t_shape_hit.lower_bound() <= 0.0f32 {
             t_shape_hit = t1;
-            if t_shape_hit.upper_bound() > ray.t_max.get() as f32 {
+            if t_shape_hit.upper_bound() > ray.t_max.get() {
                 return false;
             }
         }
@@ -158,7 +158,7 @@ impl Sphere {
             if t_shape_hit == t1 {
                 return false;
             }
-            if t1.upper_bound() > ray.t_max.get() as f32 {
+            if t1.upper_bound() > ray.t_max.get() {
                 return false;
             }
             t_shape_hit = t1;
@@ -277,16 +277,16 @@ impl Sphere {
         // compute quadratic sphere coefficients
 
         // initialize _EFloat_ ray coordinate values
-        let ox = EFloat::new(ray.o.x as f32, o_err.x as f32);
-        let oy = EFloat::new(ray.o.y as f32, o_err.y as f32);
-        let oz = EFloat::new(ray.o.z as f32, o_err.z as f32);
-        let dx = EFloat::new(ray.d.x as f32, d_err.x as f32);
-        let dy = EFloat::new(ray.d.y as f32, d_err.y as f32);
-        let dz = EFloat::new(ray.d.z as f32, d_err.z as f32);
+        let ox = EFloat::new(ray.o.x, o_err.x);
+        let oy = EFloat::new(ray.o.y, o_err.y);
+        let oz = EFloat::new(ray.o.z, o_err.z);
+        let dx = EFloat::new(ray.d.x, d_err.x);
+        let dy = EFloat::new(ray.d.y, d_err.y);
+        let dz = EFloat::new(ray.d.z, d_err.z);
         let a: EFloat = dx * dx + dy * dy + dz * dz;
         let b: EFloat = (dx * ox + dy * oy + dz * oz) * 2.0f32;
         let c: EFloat = ox * ox + oy * oy + oz * oz
-            - EFloat::new(self.radius as f32, 0.0) * EFloat::new(self.radius as f32, 0.0);
+            - EFloat::new(self.radius, 0.0) * EFloat::new(self.radius, 0.0);
 
         // solve quadratic equation for _t_ values
         let mut t0: EFloat = EFloat::default();
@@ -295,13 +295,13 @@ impl Sphere {
             return false;
         }
         // check quadric shape _t0_ and _t1_ for nearest intersection
-        if t0.upper_bound() > ray.t_max.get() as f32 || t1.lower_bound() <= 0.0f32 {
+        if t0.upper_bound() > ray.t_max.get() || t1.lower_bound() <= 0.0f32 {
             return false;
         }
         let mut t_shape_hit: EFloat = t0;
         if t_shape_hit.lower_bound() <= 0.0f32 {
             t_shape_hit = t1;
-            if t_shape_hit.upper_bound() > ray.t_max.get() as f32 {
+            if t_shape_hit.upper_bound() > ray.t_max.get() {
                 return false;
             }
         }
@@ -324,7 +324,7 @@ impl Sphere {
             if t_shape_hit == t1 {
                 return false;
             }
-            if t1.upper_bound() > ray.t_max.get() as f32 {
+            if t1.upper_bound() > ray.t_max.get() {
                 return false;
             }
             t_shape_hit = t1;
@@ -363,15 +363,17 @@ impl Sphere {
     }
     pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         let mut p_obj: Point3f = Point3f::default() + uniform_sample_sphere(u) * self.radius;
-        let mut it: InteractionCommon = InteractionCommon::default();
-        it.n = self
-            .object_to_world
-            .transform_normal(&Normal3f {
-                x: p_obj.x,
-                y: p_obj.y,
-                z: p_obj.z,
-            })
-            .normalize();
+        let mut it: InteractionCommon = InteractionCommon {
+            n: self
+                .object_to_world
+                .transform_normal(&Normal3f {
+                    x: p_obj.x,
+                    y: p_obj.y,
+                    z: p_obj.z,
+                })
+                .normalize(),
+            ..Default::default()
+        };
         if self.reverse_orientation {
             it.n *= -1.0 as Float;
         }
@@ -450,10 +452,12 @@ impl Sphere {
                 z: n_world.z,
             } * self.radius;
         // return _Interaction_ for sampled point on sphere
-        let mut it: InteractionCommon = InteractionCommon::default();
-        it.p = p_world;
-        it.p_error = Vector3f::from(p_world).abs() * gamma(5_i32);
-        it.n = Normal3f::from(n_world);
+        let mut it: InteractionCommon = InteractionCommon {
+            p: p_world,
+            p_error: Vector3f::from(p_world).abs() * gamma(5_i32),
+            n: Normal3f::from(n_world),
+            ..Default::default()
+        };
         if self.reverse_orientation {
             it.n *= -1.0 as Float;
         }
@@ -465,9 +469,9 @@ impl Sphere {
         let p_center: Point3f = self.object_to_world.transform_point(&Point3f::default());
         // return uniform PDF if point is inside sphere
         let p_origin: Point3f = pnt3_offset_ray_origin(
-            &iref.get_p(),
-            &iref.get_p_error(),
-            &iref.get_n(),
+            iref.get_p(),
+            iref.get_p_error(),
+            iref.get_n(),
             &(p_center - *iref.get_p()),
         );
         if pnt3_distance_squaredf(&p_origin, &p_center) <= self.radius * self.radius {
@@ -482,7 +486,7 @@ impl Sphere {
             let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
             if self.intersect(&ray, &mut t_hit, &mut isect_light) {
                 // convert light sample weight to solid angle measure
-                let mut pdf: Float = pnt3_distance_squaredf(&iref.get_p(), &isect_light.common.p)
+                let mut pdf: Float = pnt3_distance_squaredf(iref.get_p(), &isect_light.common.p)
                     / (nrm_abs_dot_vec3f(&isect_light.common.n, &-(*wi)) * self.area());
                 if pdf.is_infinite() {
                     pdf = 0.0 as Float;
@@ -494,7 +498,7 @@ impl Sphere {
         }
         // compute general sphere PDF
         let sin_theta_max2: Float =
-            self.radius * self.radius / pnt3_distance_squaredf(&iref.get_p(), &p_center);
+            self.radius * self.radius / pnt3_distance_squaredf(iref.get_p(), &p_center);
         let cos_theta_max: Float = (0.0 as Float).max(1.0 as Float - sin_theta_max2).sqrt();
         uniform_cone_pdf(cos_theta_max)
     }

@@ -170,7 +170,7 @@ impl ParamSet {
         let mut s: Vec<Spectrum> = Vec::with_capacity(names.len());
         for name in &names {
             // std::string filename = AbsolutePath(ResolveFilename(name));
-            let fn_str: &String = &name;
+            let fn_str: &String = name;
             let _f = File::open(fn_str.clone()).unwrap();
             let ip: &Path = Path::new(fn_str.as_str());
             if ip.is_relative() {
@@ -481,7 +481,7 @@ impl ParamSet {
     }
     pub fn find_one_filename(&self, name: &str, d: String) -> String {
         let filename: String = self.find_one_string(name, String::new());
-        if filename == "" {
+        if filename.is_empty() {
             return d;
         }
         // TODO: filename = AbsolutePath(ResolveFilename(filename));
@@ -625,10 +625,10 @@ impl TextureParams {
         def: Spectrum,
     ) -> Arc<dyn Texture<Spectrum> + Send + Sync> {
         let mut name: String = self.geom_params.find_texture(n);
-        if name == "" {
+        if name.is_empty() {
             name = self.material_params.find_texture(n);
         }
-        if name != "" {
+        if !name.is_empty() {
             match self.spectrum_textures.get(name.as_str()) {
                 Some(spectrum_texture) => {
                     return spectrum_texture.clone();
@@ -650,7 +650,7 @@ impl TextureParams {
         n: &str,
     ) -> Option<Arc<dyn Texture<Spectrum> + Send + Sync>> {
         let mut name: String = self.geom_params.find_texture(n);
-        if name == "" {
+        if name.is_empty() {
             name = self.material_params.find_texture(n);
         }
         if name != String::new() {
@@ -694,7 +694,7 @@ impl TextureParams {
         n: &str,
     ) -> Option<Arc<dyn Texture<Float> + Send + Sync>> {
         let mut name: String = self.geom_params.find_texture(n);
-        if name == "" {
+        if name.is_empty() {
             let s: Vec<Float> = self.geom_params.find_float(n);
             if s.len() > 1 {
                 println!("Ignoring excess values provided with parameter \"{}\"", n);

@@ -146,7 +146,7 @@ impl Curve {
         u1: Float,
         depth: i32,
         t_hit: &mut Float,
-        isect: &mut SurfaceInteraction,
+        _isect: &mut SurfaceInteraction,
     ) -> bool {
         let ray_length: Float = ray.d.length();
 
@@ -202,12 +202,12 @@ impl Curve {
                     u[seg + 1],
                     depth - 1,
                     t_hit,
-                    isect,
+                    _isect,
                 ) {
                     // If we found an intersection and this is a shadow ray,
                     // we can exit out immediately.
                     if *t_hit == 0.0 as Float {
-                        true;
+                        return true;
                     }
                 }
             }
@@ -305,7 +305,7 @@ impl Curve {
             } else {
                 // compute curve $\dpdv$ for flat and cylinder curves
                 let dpdu_plane: Vector3f =
-                    Transform::inverse(&*ray_to_object).transform_vector(&dpdu);
+                    Transform::inverse(ray_to_object).transform_vector(&dpdu);
                 let mut dpdv_plane: Vector3f = Vector3f {
                     x: -dpdu_plane.y,
                     y: dpdu_plane.x,
@@ -461,7 +461,8 @@ impl Curve {
         let eps: Float = self.common.width[0].max(self.common.width[1]) * 0.05 as Float;
         // compute log base 4 by dividing log2 in half.
         let r0: i32 =
-            log2(1.414_213_562_37 as Float * 6.0 as Float * l0 / (8.0 as Float * eps)) / 2_i32;
+            log2(std::f32::consts::SQRT_2 as Float * 6.0 as Float * l0 / (8.0 as Float * eps))
+                / 2_i32;
         let max_depth: i32 = clamp_t(r0, 0_i32, 10_i32);
         // TODO: ReportValue(refinementLevel, maxDepth);
         self.recursive_intersect(
@@ -532,7 +533,7 @@ impl Curve {
     }
     pub fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
         // intersect sample ray with area light geometry
-        let ray: Ray = iref.spawn_ray(&wi);
+        let ray: Ray = iref.spawn_ray(wi);
         // ignore any alpha textures used for trimming the shape when
         // performing this intersection. Hack for the "San Miguel"
         // scene, where this is used to make an invisible area light.
@@ -540,7 +541,7 @@ impl Curve {
         let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
         if self.intersect(&ray, &mut t_hit, &mut isect_light) {
             // convert light sample weight to solid angle measure
-            let mut pdf: Float = pnt3_distance_squaredf(&iref.get_p(), &isect_light.common.p)
+            let mut pdf: Float = pnt3_distance_squaredf(iref.get_p(), &isect_light.common.p)
                 / (nrm_abs_dot_vec3f(&isect_light.common.n, &-(*wi)) * self.area());
             if pdf.is_infinite() {
                 pdf = 0.0 as Float;

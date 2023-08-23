@@ -155,9 +155,11 @@ impl GridDensityMedium {
     pub fn tr(&self, r_world: &Ray, sampler: &mut Sampler) -> Spectrum {
         // TODO: ProfilePhase _(Prof::MediumTr);
         // TODO: ++nTrCalls;
-        let mut in_ray: Ray = Ray::default();
-        in_ray.o = r_world.o;
-        in_ray.d = r_world.d.normalize();
+        let mut in_ray: Ray = Ray {
+            o: r_world.o,
+            d: r_world.d.normalize(),
+            ..Default::default()
+        };
         *in_ray.t_max.get_mut() = r_world.t_max.get() * r_world.d.length();
         let ray: Ray = self.world_to_medium.transform_ray(&in_ray);
         // compute $[\tmin, \tmax]$ interval of _ray_'s overlap with medium bounds
@@ -210,9 +212,11 @@ impl GridDensityMedium {
         sampler: &mut Sampler,
     ) -> (Spectrum, Option<MediumInteraction>) {
         // TODO: ProfilePhase _(Prof::MediumSample);
-        let mut in_ray: Ray = Ray::default();
-        in_ray.o = r_world.o;
-        in_ray.d = r_world.d.normalize();
+        let mut in_ray: Ray = Ray {
+            o: r_world.o,
+            d: r_world.d.normalize(),
+            ..Default::default()
+        };
         *in_ray.t_max.get_mut() = r_world.t_max.get() * r_world.d.length();
         let ray: Ray = self.world_to_medium.transform_ray(&in_ray);
         // compute $[\tmin, \tmax]$ interval of _ray_'s overlap with medium bounds
@@ -241,7 +245,6 @@ impl GridDensityMedium {
                 break;
             }
             if self.density(&ray.position(t)) * self.inv_max_density > sampler.get_1d() {
-                let mi_opt: Option<MediumInteraction>;
                 // populate _mi_ with medium interaction information and return
                 let mi: MediumInteraction = MediumInteraction::new(
                     &r_world.position(t),
@@ -261,7 +264,7 @@ impl GridDensityMedium {
                     }))),
                     Some(Arc::new(HenyeyGreenstein { g: self.g })),
                 );
-                mi_opt = Some(mi);
+                let mi_opt: Option<MediumInteraction> = Some(mi);
                 return (self.sigma_s / self.sigma_t, mi_opt);
             }
         }

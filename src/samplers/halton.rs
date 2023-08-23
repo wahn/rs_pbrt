@@ -192,7 +192,7 @@ impl HaltonSampler {
                     };
                     self.offset_for_current_pixel.fetch_add(
                         dim_offset
-                            * (self.sample_stride / self.base_scales[i] as u64) as u64
+                            * (self.sample_stride / self.base_scales[i] as u64)
                             * self.mult_inverse[i as usize] as u64,
                         Ordering::SeqCst,
                     );
@@ -200,7 +200,7 @@ impl HaltonSampler {
                 let offset_for_current_pixel: u64 =
                     self.offset_for_current_pixel.load(Ordering::Relaxed);
                 self.offset_for_current_pixel.store(
-                    offset_for_current_pixel % self.sample_stride as u64,
+                    offset_for_current_pixel % self.sample_stride,
                     Ordering::Relaxed,
                 );
             }
@@ -253,7 +253,7 @@ impl HaltonSampler {
             let n_samples = self.samples_1d_array_sizes[i] * self.samples_per_pixel as i32;
             for j in 0..n_samples {
                 let index: u64 = self.get_index_for_sample(j as u64);
-                self.sample_array_1d[i as usize][j as usize] =
+                self.sample_array_1d[i][j as usize] =
                     self.sample_dimension(index, self.array_start_dim + i as i64);
             }
         }

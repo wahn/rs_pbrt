@@ -158,8 +158,8 @@ impl FourierBSDFTable {
                             }
                             // fill self.a_offset, self.m, and self.a0 vectors
                             for i in 0..(self.n_mu as usize * self.n_mu as usize) {
-                                let offset: i32 = offset_and_length[(2 * i) as usize];
-                                let length: i32 = offset_and_length[(2 * i + 1) as usize];
+                                let offset: i32 = offset_and_length[2 * i];
+                                let length: i32 = offset_and_length[2 * i + 1];
                                 self.a_offset.push(offset);
                                 self.m.push(length);
                                 if length > 0 {
@@ -570,12 +570,12 @@ impl Bxdf {
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
-        *wi = cosine_sample_hemisphere(&u);
+        *wi = cosine_sample_hemisphere(u);
         if wo.z < 0.0 {
             wi.z *= -1.0;
         }
-        *pdf = self.pdf(wo, &wi);
-        self.f(wo, &wi)
+        *pdf = self.pdf(wo, wi);
+        self.f(wo, wi)
     }
     /// Evaluate the PDF for the given outgoing and incoming directions.
     ///
@@ -975,7 +975,7 @@ impl LambertianReflection {
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
-        *wi = cosine_sample_hemisphere(&u);
+        *wi = cosine_sample_hemisphere(u);
         if wo.z < 0.0 as Float {
             wi.z *= -1.0 as Float;
         }
@@ -1023,7 +1023,7 @@ impl LambertianTransmission {
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
-        *wi = cosine_sample_hemisphere(&u);
+        *wi = cosine_sample_hemisphere(u);
         if wo.z > 0.0 as Float {
             wi.z *= -1.0 as Float;
         }
@@ -1336,7 +1336,7 @@ impl MicrofacetTransmission {
         };
 
         if refract(wo, &wh.into(), eta, wi) {
-            *pdf = self.pdf(wo, &wi);
+            *pdf = self.pdf(wo, wi);
             if let Some(sc) = self.sc_opt {
                 sc * self.f(wo, wi)
             } else {
@@ -1773,7 +1773,7 @@ impl FourierBSDF {
             rho += weight_o
                 * self.bsdf_table.cdf[(offset_o as usize + o) * self.bsdf_table.n_mu as usize
                     + self.bsdf_table.n_mu as usize
-                    - 1 as usize]
+                    - 1_usize]
                 * (2.0 as Float * PI);
         }
         let y: Float = (0.0 as Float).max(fourier(&ak, 0_usize, m_max, cos_phi as f64));

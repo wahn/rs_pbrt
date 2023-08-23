@@ -15,7 +15,6 @@
 //! ```rust
 //! use rs_pbrt::core::geometry::{Point3i, Point3f};
 //!
-//! fn main() {
 //!     let int_origin = Point3i { x: 0, y: 0, z: 0 };
 //!     let float_origin = Point3f {
 //!         x: 0.0,
@@ -25,7 +24,6 @@
 //!
 //!     println!("int   {:?}", int_origin);
 //!     println!("float {:?}", float_origin);
-//! }
 //! ```
 //!
 //! # Vectors
@@ -38,7 +36,6 @@
 //! ```rust
 //! use rs_pbrt::core::geometry::{Vector3i, Vector3f};
 //!
-//! fn main() {
 //!     let int_null = Vector3i { x: 0, y: 0, z: 0 };
 //!     let float_null = Vector3f {
 //!         x: 0.0,
@@ -48,7 +45,6 @@
 //!
 //!     println!("int   {:?}", int_null);
 //!     println!("float {:?}", float_null);
-//! }
 //! ```
 //!
 //! # Normals
@@ -66,7 +62,6 @@
 //! ```rust
 //! use rs_pbrt::core::geometry::Normal3f;
 //!
-//! fn main() {
 //!     let float_null = Normal3f {
 //!         x: 0.0,
 //!         y: 0.0,
@@ -74,7 +69,6 @@
 //!     };
 //!
 //!     println!("float {:?}", float_null);
-//! }
 //! ```
 //!
 //! # Rays
@@ -90,7 +84,6 @@
 //! use rs_pbrt::core::geometry::{Ray, Point3f, Vector3f};
 //! use std::cell::Cell;
 //!
-//! fn main() {
 //!     let origin = Point3f {
 //!         x: -5.5,
 //!         y: 2.75,
@@ -109,7 +102,6 @@
 //!         medium: None,
 //!         differential: None,
 //!     };
-//! }
 //! ```
 //!
 //! ## RayDifferentials
@@ -141,7 +133,6 @@
 //! ```rust
 //! use rs_pbrt::core::geometry::{Bounds3i, Bounds3f, Point3i, Point3f};
 //!
-//! fn main() {
 //!     let int_origin = Point3i { x: 0, y: 0, z: 0 };
 //!     let int_xyz111 = Point3i { x: 1, y: 1, z: 1 };
 //!     let float_origin = Point3f {
@@ -165,7 +156,6 @@
 //!
 //!     println!("int   {:?}", int_unit_cube);
 //!     println!("float {:?}", float_unit_cube);
-//! }
 //! ```
 
 // std
@@ -2037,24 +2027,21 @@ impl Bounds3f {
     pub fn corner(&self, corner: u8) -> Point3f {
         // assert!(corner >= 0_u8);
         assert!(corner < 8_u8);
-        let x: Float;
-        if corner & 1 == 0 {
-            x = self.p_min.x;
+        let x: Float = if corner & 1 == 0 {
+            self.p_min.x
         } else {
-            x = self.p_max.x;
-        }
-        let y: Float;
-        if corner & 2 == 0 {
-            y = self.p_min.y;
+            self.p_max.x
+        };
+        let y: Float = if corner & 2 == 0 {
+            self.p_min.y
         } else {
-            y = self.p_max.y;
-        }
-        let z: Float;
-        if corner & 4 == 0 {
-            z = self.p_min.z;
+            self.p_max.y
+        };
+        let z: Float = if corner & 4 == 0 {
+            self.p_min.z
         } else {
-            z = self.p_max.z;
-        }
+            self.p_max.z
+        };
         Point3f { x, y, z }
     }
     pub fn diagonal(&self) -> Vector3f {
@@ -2121,24 +2108,21 @@ impl Bounds3i {
     pub fn corner(&self, corner: u8) -> Point3i {
         // assert!(corner >= 0_u8);
         assert!(corner < 8_u8);
-        let x: i32;
-        if corner & 1 == 0 {
-            x = self.p_min.x;
+        let x: i32 = if corner & 1 == 0 {
+            self.p_min.x
         } else {
-            x = self.p_max.x;
-        }
-        let y: i32;
-        if corner & 2 == 0 {
-            y = self.p_min.y;
+            self.p_max.x
+        };
+        let y: i32 = if corner & 2 == 0 {
+            self.p_min.y
         } else {
-            y = self.p_max.y;
-        }
-        let z: i32;
-        if corner & 4 == 0 {
-            z = self.p_min.z;
+            self.p_max.y
+        };
+        let z: i32 = if corner & 4 == 0 {
+            self.p_min.z
         } else {
-            z = self.p_max.z;
-        }
+            self.p_max.z
+        };
         Point3i { x, y, z }
     }
     pub fn diagonal(&self) -> Vector3i {

@@ -151,7 +151,7 @@ pub fn degrees(rad: Float) -> Float {
 }
 
 pub fn log_2(x: Float) -> Float {
-    let inv_log2: Float = 1.442_695_040_888_963_387_004_650_940_071;
+    let inv_log2: Float = std::f32::consts::LOG2_E;
     x.ln() * inv_log2
 }
 

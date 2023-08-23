@@ -132,12 +132,14 @@ impl MediumInteraction {
         medium: Option<Arc<Medium>>,
         phase: Option<Arc<HenyeyGreenstein>>,
     ) -> Self {
-        let mut common: InteractionCommon = InteractionCommon::default();
-        common.p = *p;
-        common.time = time;
-        common.p_error = Vector3f::default();
-        common.wo = *wo;
-        common.n = Normal3f::default();
+        let mut common: InteractionCommon = InteractionCommon {
+            p: *p,
+            time,
+            p_error: Vector3f::default(),
+            wo: *wo,
+            n: Normal3f::default(),
+            ..Default::default()
+        };
         if let Some(medium_arc) = medium {
             let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
             let outside: Option<Arc<Medium>> = Some(medium_arc);
@@ -149,39 +151,23 @@ impl MediumInteraction {
         }
     }
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium>> {
-        if vec3_dot_nrmf(w, &self.get_n()) > 0.0 as Float {
+        if vec3_dot_nrmf(w, self.get_n()) > 0.0 as Float {
             if let Some(ref medium_interface) = self.get_medium_interface() {
-                if let Some(ref outside_arc) = medium_interface.outside {
-                    Some(outside_arc.clone())
-                } else {
-                    None
-                }
+                medium_interface.outside.as_ref().cloned()
             } else {
                 None
             }
         } else if let Some(ref medium_interface) = self.get_medium_interface() {
-            if let Some(ref inside_arc) = medium_interface.inside {
-                Some(inside_arc.clone())
-            } else {
-                None
-            }
+            medium_interface.inside.as_ref().cloned()
         } else {
             None
         }
     }
     pub fn is_valid(&self) -> bool {
-        if let Some(ref _arc) = self.phase {
-            true
-        } else {
-            false
-        }
+        matches!(self.phase, Some(ref _arc))
     }
     pub fn get_phase(&self) -> Option<Arc<HenyeyGreenstein>> {
-        if let Some(ref phase) = self.phase {
-            Some(phase.clone())
-        } else {
-            None
-        }
+        self.phase.as_ref().cloned()
     }
 }
 
@@ -223,11 +209,7 @@ impl Interaction for MediumInteraction {
         &self.common.n
     }
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
-        if let Some(ref medium_interface) = self.common.medium_interface {
-            Some(medium_interface.clone())
-        } else {
-            None
-        }
+        self.common.medium_interface.as_ref().cloned()
     }
     fn get_bsdf(&self) -> Option<&Bsdf> {
         None
@@ -236,11 +218,7 @@ impl Interaction for MediumInteraction {
         None
     }
     fn get_phase(&self) -> Option<Arc<HenyeyGreenstein>> {
-        if let Some(ref phase) = self.phase {
-            Some(phase.clone())
-        } else {
-            None
-        }
+        self.phase.as_ref().cloned()
     }
 }
 
@@ -294,21 +272,22 @@ impl<'a> SurfaceInteraction<'a> {
             dndu: *dndu,
             dndv: *dndv,
         };
-        if let Some(ref shape) = sh {
+        if let Some(shape) = sh {
             // adjust normal based on orientation and handedness
             if shape.get_reverse_orientation() ^ shape.get_transform_swaps_handedness() {
                 n *= -1.0 as Float;
                 shading.n *= -1.0 as Float;
             }
         }
-        let mut common: InteractionCommon = InteractionCommon::default();
-        common.p = *p;
-        common.time = time;
-        common.p_error = *p_error;
-        common.wo = wo.normalize();
-        common.n = n;
-        common.medium_interface = None;
-        if let Some(ref shape) = sh {
+        let common: InteractionCommon = InteractionCommon {
+            p: *p,
+            time,
+            p_error: *p_error,
+            wo: wo.normalize(),
+            n,
+            medium_interface: None,
+        };
+        if let Some(shape) = sh {
             SurfaceInteraction {
                 common,
                 uv,
@@ -353,20 +332,12 @@ impl<'a> SurfaceInteraction<'a> {
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium>> {
         if vec3_dot_nrmf(w, &self.common.n) > 0.0 as Float {
             if let Some(ref medium_interface) = self.common.medium_interface {
-                if let Some(ref outside_arc) = medium_interface.outside {
-                    Some(outside_arc.clone())
-                } else {
-                    None
-                }
+                medium_interface.outside.as_ref().cloned()
             } else {
                 None
             }
         } else if let Some(ref medium_interface) = self.common.medium_interface {
-            if let Some(ref inside_arc) = medium_interface.inside {
-                Some(inside_arc.clone())
-            } else {
-                None
-            }
+            medium_interface.inside.as_ref().cloned()
         } else {
             None
         }
@@ -381,7 +352,7 @@ impl<'a> SurfaceInteraction<'a> {
     ) {
         // compute _shading.n_ for _SurfaceInteraction_
         self.shading.n = Normal3f::from(vec3_cross_vec3(dpdus, dpdvs)).normalize();
-        if let Some(ref shape) = self.shape {
+        if let Some(shape) = self.shape {
             if shape.get_reverse_orientation() ^ shape.get_transform_swaps_handedness() {
                 self.shading.n = -self.shading.n;
             }
@@ -550,11 +521,7 @@ impl<'a> Interaction for SurfaceInteraction<'a> {
         &self.common.n
     }
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
-        if let Some(ref medium_interface) = self.common.medium_interface {
-            Some(medium_interface.clone())
-        } else {
-            None
-        }
+        self.common.medium_interface.as_ref().cloned()
     }
     fn get_bsdf(&self) -> Option<&Bsdf> {
         if let Some(ref bsdf) = self.bsdf {

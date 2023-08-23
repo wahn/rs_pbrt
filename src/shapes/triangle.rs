@@ -211,9 +211,9 @@ impl Triangle {
         p1t.z *= sz;
         p2t.z *= sz;
         let t_scaled: Float = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
-        if det < 0.0 && (t_scaled >= 0.0 || t_scaled < ray.t_max.get() * det) {
-            return false;
-        } else if det > 0.0 && (t_scaled <= 0.0 || t_scaled > ray.t_max.get() * det) {
+        if det < 0.0 && (t_scaled >= 0.0 || t_scaled < ray.t_max.get() * det)
+            || det > 0.0 && (t_scaled <= 0.0 || t_scaled > ray.t_max.get() * det)
+        {
             return false;
         }
         // compute barycentric coordinates and $t$ value for triangle intersection
@@ -529,9 +529,9 @@ impl Triangle {
         p1t.z *= sz;
         p2t.z *= sz;
         let t_scaled: Float = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
-        if det < 0.0 && (t_scaled >= 0.0 || t_scaled < ray.t_max.get() * det) {
-            return false;
-        } else if det > 0.0 && (t_scaled <= 0.0 || t_scaled > ray.t_max.get() * det) {
+        if det < 0.0 && (t_scaled >= 0.0 || t_scaled < ray.t_max.get() * det)
+            || det > 0.0 && (t_scaled <= 0.0 || t_scaled > ray.t_max.get() * det)
+        {
             return false;
         }
         // compute barycentric coordinates and $t$ value for triangle intersection
@@ -752,7 +752,7 @@ impl Triangle {
         let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
         if self.intersect(&ray, &mut t_hit, &mut isect_light) {
             // convert light sample weight to solid angle measure
-            let mut pdf: Float = pnt3_distance_squaredf(&iref.get_p(), &isect_light.common.p)
+            let mut pdf: Float = pnt3_distance_squaredf(iref.get_p(), &isect_light.common.p)
                 / (nrm_abs_dot_vec3f(&isect_light.common.n, &-(*wi)) * self.area());
             if pdf.is_infinite() {
                 pdf = 0.0 as Float;

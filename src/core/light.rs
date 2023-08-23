@@ -94,13 +94,13 @@ impl Light {
     }
     pub fn pdf_li(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
         match self {
-            Light::DiffuseArea(light) => light.pdf_li(iref, &wi),
-            Light::Distant(light) => light.pdf_li(iref, &wi),
-            Light::GonioPhotometric(light) => light.pdf_li(iref, &wi),
-            Light::InfiniteArea(light) => light.pdf_li(iref, &wi),
-            Light::Point(light) => light.pdf_li(iref, &wi),
-            Light::Projection(light) => light.pdf_li(iref, &wi),
-            Light::Spot(light) => light.pdf_li(iref, &wi),
+            Light::DiffuseArea(light) => light.pdf_li(iref, wi),
+            Light::Distant(light) => light.pdf_li(iref, wi),
+            Light::GonioPhotometric(light) => light.pdf_li(iref, wi),
+            Light::InfiniteArea(light) => light.pdf_li(iref, wi),
+            Light::Point(light) => light.pdf_li(iref, wi),
+            Light::Projection(light) => light.pdf_li(iref, wi),
+            Light::Spot(light) => light.pdf_li(iref, wi),
         }
     }
     pub fn sample_le(
@@ -201,7 +201,7 @@ impl<'a, 'b> VisibilityTester<'a, 'b> {
             .p0
             .as_ref()
             .unwrap()
-            .spawn_ray_to(&self.p1.as_ref().unwrap());
+            .spawn_ray_to(self.p1.as_ref().unwrap());
         !scene.intersect_p(&mut ray)
     }
     pub fn tr(&self, scene: &Scene, sampler: &mut Sampler) -> Spectrum {
@@ -209,11 +209,11 @@ impl<'a, 'b> VisibilityTester<'a, 'b> {
             .p0
             .as_ref()
             .unwrap()
-            .spawn_ray_to(&self.p1.as_ref().unwrap());
+            .spawn_ray_to(self.p1.as_ref().unwrap());
         let mut tr: Spectrum = Spectrum::new(1.0 as Float);
         loop {
             let mut isect: SurfaceInteraction = SurfaceInteraction::default();
-            if scene.intersect(&mut ray, &mut isect) {
+            if scene.intersect(&ray, &mut isect) {
                 // handle opaque surface along ray's path
                 if let Some(primitive_raw) = isect.primitive {
                     let primitive = unsafe { &*primitive_raw };
@@ -233,7 +233,7 @@ impl<'a, 'b> VisibilityTester<'a, 'b> {
                 }
                 break;
             }
-            ray = isect.common.spawn_ray_to(&self.p1.as_ref().unwrap());
+            ray = isect.common.spawn_ray_to(self.p1.as_ref().unwrap());
         }
         tr
     }

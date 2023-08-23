@@ -139,17 +139,15 @@ impl SpatialLightDistribution {
         let bmax: Float = diag[bmax_i];
         let mut n_voxels: [i32; 3] = [0_i32; 3];
         for i in XYZEnum::iter() {
-            n_voxels[i as usize] = std::cmp::max(
-                1 as i32,
-                (diag[i] / bmax * max_voxels as Float).round() as i32,
-            );
+            n_voxels[i as usize] =
+                std::cmp::max(1_i32, (diag[i] / bmax * max_voxels as Float).round() as i32);
             // in the Lookup() method, we require that 20 or fewer
             // bits be sufficient to represent each coordinate
             // value. It's fairly hard to imagine that this would ever
             // be a problem.
             assert!(n_voxels[i as usize] < (1 << 20));
         }
-        let hash_table_size: usize = (4 as i32 * n_voxels[0] * n_voxels[1] * n_voxels[2]) as usize;
+        let hash_table_size: usize = (4_i32 * n_voxels[0] * n_voxels[1] * n_voxels[2]) as usize;
         let mut hash_table: Vec<HashEntry> = Vec::with_capacity(hash_table_size);
         // let null: *mut Distribution1D = std::ptr::null_mut();
         for _i in 0..hash_table_size {
@@ -281,7 +279,7 @@ impl SpatialLightDistribution {
 
         // first, compute integer voxel coordinates for the given
         // point |p| with respect to the overall voxel grid.
-        let offset: Vector3f = self.scene.world_bound().offset(&p); // offset in [0,1].
+        let offset: Vector3f = self.scene.world_bound().offset(p); // offset in [0,1].
         let mut pi: Point3i = Point3i::default();
         for i in XYZEnum::iter() {
             // the clamp should almost never be necessary, but is

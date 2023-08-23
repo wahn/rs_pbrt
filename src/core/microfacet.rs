@@ -482,7 +482,7 @@ fn trowbridge_reitz_sample_11(
     // special case (normal incidence)
     if cos_theta > 0.9999 {
         let r: Float = (u1 / (1.0 - u1)).sqrt();
-        let phi: Float = 6.283_185_307_18 * u2;
+        let phi: Float = std::f32::consts::TAU * u2;
         *slope_x = r * phi.cos();
         *slope_y = r * phi.sin();
         return;

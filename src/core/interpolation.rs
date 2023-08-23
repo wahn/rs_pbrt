@@ -106,18 +106,16 @@ pub fn sample_catmull_rom_2d(
     // re-scale _u_ using the interpolated _cdf_
     u = (u - interpolate(cdf, idx)) / width;
     // approximate derivatives using finite differences of the interpolant
-    let d0: Float;
-    let d1: Float;
-    if idx > 0_i32 {
-        d0 = width * (f1 - interpolate(values, idx - 1)) / (x1 - nodes2[(idx - 1) as usize]);
+    let d0: Float = if idx > 0_i32 {
+        width * (f1 - interpolate(values, idx - 1)) / (x1 - nodes2[(idx - 1) as usize])
     } else {
-        d0 = f1 - f0;
-    }
-    if (idx + 2) < size2 {
-        d1 = width * (interpolate(values, idx + 2) - f0) / (nodes2[(idx + 2) as usize] - x0);
+        f1 - f0
+    };
+    let d1: Float = if (idx + 2) < size2 {
+        width * (interpolate(values, idx + 2) - f0) / (nodes2[(idx + 2) as usize] - x0)
     } else {
-        d1 = f1 - f0;
-    }
+        f1 - f0
+    };
 
     // invert definite integral over spline segment and return solution
 
@@ -178,7 +176,7 @@ pub fn integrate_catmull_rom(
     x: &[Float],
     offset: usize,
     values: &[Float],
-    cdf: &mut Vec<Float>,
+    cdf: &mut [Float],
 ) -> Float {
     let mut sum: Float = 0.0;
     cdf[offset] = 0.0 as Float;
@@ -190,18 +188,16 @@ pub fn integrate_catmull_rom(
         let f1: Float = values[offset + i + 1];
         let width: Float = x1 - x0;
         // approximate derivatives using finite differences
-        let d0: Float;
-        let d1: Float;
-        if i > 0 {
-            d0 = width * (f1 - values[offset + i - 1]) / (x1 - x[i - 1]);
+        let d0: Float = if i > 0 {
+            width * (f1 - values[offset + i - 1]) / (x1 - x[i - 1])
         } else {
-            d0 = f1 - f0;
-        }
-        if i + 2 < n as usize {
-            d1 = width * (values[offset + i + 2] - f0) / (x[i + 2] - x0);
+            f1 - f0
+        };
+        let d1: Float = if i + 2 < n as usize {
+            width * (values[offset + i + 2] - f0) / (x[i + 2] - x0)
         } else {
-            d1 = f1 - f0;
-        }
+            f1 - f0
+        };
         // keep a running sum and build a cumulative distribution function
         sum += ((d0 - d1) * (1.0 as Float / 12.0 as Float) + (f0 + f1) * 0.5 as Float) * width;
         cdf[offset + i + 1] = sum;
@@ -218,7 +214,7 @@ pub fn fourier(a: &SmallVec<[Float; 128]>, si: usize, m: i32, cos_phi: f64) -> F
     for k in 0..m as usize {
         // add the current summand and update the cosine iterates
         value += a[si + k] as f64 * cos_k_phi;
-        let cos_k_plus_one_phi: f64 = 2.0 as f64 * cos_phi * cos_k_phi - cos_k_minus_one_phi;
+        let cos_k_plus_one_phi: f64 = 2.0_f64 * cos_phi * cos_k_phi - cos_k_minus_one_phi;
         cos_k_minus_one_phi = cos_k_phi;
         cos_k_phi = cos_k_plus_one_phi;
     }
@@ -278,25 +274,25 @@ pub fn sample_fourier(
         }
         cf -= (u * ak[0] * PI) as f64;
         // update bisection bounds using updated $\phi$
-        if cf > 0.0 as f64 {
+        if cf > 0.0_f64 {
             b = phi;
         } else {
             a = phi;
         }
         // stop the Fourier bisection iteration if converged
-        if cf.abs() < 1e-6 as f64 || b - a < 1e-6 as f64 {
+        if cf.abs() < 1e-6_f64 || b - a < 1e-6_f64 {
             break;
         }
         // perform a Newton step given $f(\phi)$ and $cf(\phi)$
         phi -= cf / f;
         // fall back to a bisection step when $\phi$ is out of bounds
         if !(phi > a && phi < b) {
-            phi = 0.5 as f64 * (a + b);
+            phi = 0.5_f64 * (a + b);
         }
     }
     // potentially flip $\phi$ and return the result
     if flip {
-        phi = 2.0 as f64 * PI as f64 - phi;
+        phi = 2.0_f64 * PI as f64 - phi;
     }
     *pdf = (INV_2_PI as f64 * f / ak[0] as f64) as Float;
     *phi_ptr = phi as Float;

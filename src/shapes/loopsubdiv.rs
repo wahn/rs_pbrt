@@ -335,7 +335,7 @@ pub fn loop_subdivide(
         }
     }
     // finish vertex initialization
-    for (vi, mut vert) in verts.iter_mut().enumerate().take(p.len()) {
+    for (vi, vert) in verts.iter_mut().enumerate().take(p.len()) {
         let start_face = vert.start_face;
         let mut fi = start_face;
         loop {
@@ -345,13 +345,10 @@ pub fn loop_subdivide(
             }
         }
         let valence = vert.valence(vi as i32, &faces);
-        if let Some(v) = Arc::get_mut(&mut vert) {
+        if let Some(v) = Arc::get_mut(vert) {
             v.boundary = fi == -1_i32;
-            if !v.boundary && valence == 6 {
-                v.regular = true;
-            } else if v.boundary && valence == 4 {
-                v.regular = true;
-            } else {
+            v.regular = true;
+            if !(!v.boundary && valence == 6 || v.boundary && valence == 4) {
                 v.regular = false;
             }
         }
@@ -362,8 +359,8 @@ pub fn loop_subdivide(
         let mut new_faces: Vec<Arc<SDFace>> = Vec::new();
         let mut new_vertices: Vec<Arc<SDVertex>> = Vec::new();
         // allocate next level of children in mesh tree
-        for mut vert in &mut verts {
-            if let Some(vertex) = Arc::get_mut(&mut vert) {
+        for vert in &mut verts {
+            if let Some(vertex) = Arc::get_mut(vert) {
                 let ci = new_vertices.len();
                 vertex.child = ci as i32;
                 new_vertices.push(Arc::new(SDVertex::default()));
@@ -373,8 +370,8 @@ pub fn loop_subdivide(
                 }
             }
         }
-        for mut face in &mut faces {
-            if let Some(face) = Arc::get_mut(&mut face) {
+        for face in &mut faces {
+            if let Some(face) = Arc::get_mut(face) {
                 for k in 0..4 {
                     let ci = new_faces.len();
                     new_faces.push(Arc::new(SDFace::default()));
@@ -452,10 +449,10 @@ pub fn loop_subdivide(
             }
         }
         // update even vertex face pointers
-        for (vi, mut vert) in verts.iter_mut().enumerate() {
+        for (vi, vert) in verts.iter_mut().enumerate() {
             let mut ci = -1_i32;
             let mut face_child = -1_i32;
-            if let Some(vertex) = Arc::get_mut(&mut vert) {
+            if let Some(vertex) = Arc::get_mut(vert) {
                 let start_face = vertex.start_face as usize;
                 let face = faces[start_face].clone();
                 let vert_num: usize = face.vnum(vi as i32) as usize;

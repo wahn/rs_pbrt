@@ -2162,7 +2162,7 @@ pub fn radical_inverse(base_index: u16, a: u64) -> Float {
 }
 
 /// Computes random permutation tables.
-pub fn compute_radical_inverse_permutations(mut rng: &mut Rng) -> Vec<u16> {
+pub fn compute_radical_inverse_permutations(rng: &mut Rng) -> Vec<u16> {
     // allocate space in _perms_ for radical inverse permutations
     let mut perm_array_size: usize = 0_usize;
     for i in 0..PRIME_TABLE_SIZE {
@@ -2179,7 +2179,7 @@ pub fn compute_radical_inverse_permutations(mut rng: &mut Rng) -> Vec<u16> {
             &mut perms[p..(p + PRIMES[i as usize] as usize)],
             PRIMES[i as usize] as i32,
             1,
-            &mut rng,
+            rng,
         );
         p += PRIMES[i as usize] as usize;
     }

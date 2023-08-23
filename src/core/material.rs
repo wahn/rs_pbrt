@@ -204,7 +204,7 @@ impl Material {
                     .normalize();
         }
         let v_displace: Float = d.evaluate(&si_eval);
-        let displace: Float = d.evaluate(&si);
+        let displace: Float = d.evaluate(si);
         // compute bump-mapped differential geometry
         let dpdu: Vector3f = si.shading.dpdu
             + Vector3f::from(si.shading.n) * ((u_displace - displace) / du)

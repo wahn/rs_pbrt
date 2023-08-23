@@ -302,8 +302,10 @@ where
         for i in 0..new_res {
             // compute image resampling weights for _i_th texel
             let center: Float = (i as Float + 0.5 as Float) * old_res as Float / new_res as Float;
-            let mut rw: ResampleWeight = ResampleWeight::default();
-            rw.first_texel = ((center - filterwidth) + 0.5 as Float).floor() as i32;
+            let mut rw: ResampleWeight = ResampleWeight {
+                first_texel: ((center - filterwidth) + 0.5 as Float).floor() as i32,
+                ..Default::default()
+            };
             for j in 0..4 {
                 let pos: Float = rw.first_texel as Float + j as Float + 0.5 as Float;
                 rw.weight[j] = lanczos((pos - center) / filterwidth, 2.0 as Float);
@@ -384,7 +386,7 @@ where
                         WEIGHT_LUT_SIZE - 1,
                     );
                     let weight: Float = self.weight_lut[index];
-                    sum += *self.texel(level, is as isize, it as isize) * weight;
+                    sum += *self.texel(level, is, it) * weight;
                     sum_wts += weight;
                 }
             }

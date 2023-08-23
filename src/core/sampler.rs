@@ -83,13 +83,14 @@ impl Sampler {
         }
     }
     pub fn get_camera_sample(&mut self, p_raster: Point2i) -> CameraSample {
-        let mut cs: CameraSample = CameraSample::default();
-        cs.p_film = Point2f {
-            x: p_raster.x as Float,
-            y: p_raster.y as Float,
-        } + self.get_2d();
-        cs.time = self.get_1d();
-        cs.p_lens = self.get_2d();
+        let cs: CameraSample = CameraSample {
+            p_film: Point2f {
+                x: p_raster.x as Float,
+                y: p_raster.y as Float,
+            } + self.get_2d(),
+            time: self.get_1d(),
+            p_lens: self.get_2d(),
+        };
         cs
     }
     pub fn request_2d_array(&mut self, n: i32) {

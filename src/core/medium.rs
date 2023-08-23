@@ -322,7 +322,7 @@ impl HenyeyGreenstein {
         let mut v1: Vector3f = Vector3f::default();
         let mut v2: Vector3f = Vector3f::default();
         vec3_coordinate_system(wo, &mut v1, &mut v2);
-        *wi = spherical_direction_vec3(sin_theta, cos_theta, phi, &v1, &v2, &wo);
+        *wi = spherical_direction_vec3(sin_theta, cos_theta, phi, &v1, &v2, wo);
         phase_hg(cos_theta, self.g)
     }
 }
@@ -342,8 +342,8 @@ impl MediumInterface {
             // self.inside == Some
             if let Some(ref outside) = self.outside {
                 // self.outside == Some
-                let pi = &*inside as *const _ as *const usize;
-                let po = &*outside as *const _ as *const usize;
+                let pi = inside as *const _ as *const usize;
+                let po = outside as *const _ as *const usize;
                 pi != po
             } else {
                 // self.outside == None
@@ -361,18 +361,10 @@ impl MediumInterface {
         }
     }
     pub fn get_inside(&self) -> Option<Arc<Medium>> {
-        if let Some(ref inside) = self.inside {
-            Some(inside.clone())
-        } else {
-            None
-        }
+        self.inside.as_ref().cloned()
     }
     pub fn get_outside(&self) -> Option<Arc<Medium>> {
-        if let Some(ref outside) = self.outside {
-            Some(outside.clone())
-        } else {
-            None
-        }
+        self.outside.as_ref().cloned()
     }
 }
 
@@ -381,7 +373,7 @@ pub fn get_medium_scattering_properties(
     sigma_a: &mut Spectrum,
     sigma_prime_s: &mut Spectrum,
 ) -> bool {
-    if name == "" {
+    if name.is_empty() {
         return false;
     }
     for mss in SUBSURFACE_PARAMETER_TABLE.iter() {

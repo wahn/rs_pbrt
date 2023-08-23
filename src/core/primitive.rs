@@ -188,18 +188,10 @@ impl GeometricPrimitive {
         self.shape.intersect_p(r)
     }
     pub fn get_material(&self) -> Option<Arc<Material>> {
-        if let Some(ref material) = self.material {
-            Some(material.clone())
-        } else {
-            None
-        }
+        self.material.as_ref().cloned()
     }
     pub fn get_area_light(&self) -> Option<Arc<Light>> {
-        if let Some(ref area_light) = self.area_light {
-            Some(area_light.clone())
-        } else {
-            None
-        }
+        self.area_light.as_ref().cloned()
     }
 }
 
@@ -225,8 +217,8 @@ impl TransformedPrimitive {
         let mut interpolated_prim_to_world: Transform = Transform::default();
         self.primitive_to_world
             .interpolate(r.time, &mut interpolated_prim_to_world);
-        let mut ray: Ray = Transform::inverse(&interpolated_prim_to_world).transform_ray(&*r);
-        if self.primitive.intersect(&mut ray, isect) {
+        let ray: Ray = Transform::inverse(&interpolated_prim_to_world).transform_ray(r);
+        if self.primitive.intersect(& ray, isect) {
             r.t_max.set(ray.t_max.get());
             // transform instance's intersection data to world space
             if !interpolated_prim_to_world.is_identity() {
@@ -269,7 +261,7 @@ impl TransformedPrimitive {
             .interpolate(r.time, &mut interpolated_prim_to_world);
         interpolated_prim_to_world = Transform::inverse(&interpolated_prim_to_world);
         self.primitive
-            .intersect_p(&interpolated_prim_to_world.transform_ray(&*r))
+            .intersect_p(&interpolated_prim_to_world.transform_ray(r))
     }
     pub fn get_material(&self) -> Option<Arc<Material>> {
         None

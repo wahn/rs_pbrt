@@ -63,7 +63,7 @@ impl Distribution1D {
         // see pbrt.h (int FindInterval(int size, const Predicate &pred) {...})
         let mut first: usize = 0;
         let mut len: usize = self.cdf.len();
-        while len > 0 as usize {
+        while len > 0_usize {
             let half: usize = len >> 1;
             let middle: usize = first + half;
             // bisect range based on value of _pred_ at _middle_
@@ -76,7 +76,7 @@ impl Distribution1D {
         }
         let offset: usize = clamp_t(
             first as isize - 1_isize,
-            0 as isize,
+            0_isize,
             self.cdf.len() as isize - 2_isize,
         ) as usize;
         if let Some(off_ref) = off {
@@ -112,7 +112,7 @@ impl Distribution1D {
         // see pbrt.h (int FindInterval(int size, const Predicate &pred) {...})
         let mut first: usize = 0;
         let mut len: usize = self.cdf.len();
-        while len > 0 as usize {
+        while len > 0_usize {
             let half: usize = len >> 1;
             let middle: usize = first + half;
             // bisect range based on value of _pred_ at _middle_
@@ -125,7 +125,7 @@ impl Distribution1D {
         }
         let offset: usize = clamp_t(
             first as isize - 1_isize,
-            0 as isize,
+            0_isize,
             self.cdf.len() as isize - 2_isize,
         ) as usize;
         if let Some(value) = pdf {
@@ -287,7 +287,7 @@ pub fn latin_hypercube(samples: &mut [Point2f], n_samples: u32, rng: &mut Rng) {
     // permute LHS samples in each dimension
     for i in 0..n_dim {
         for j in 0..n_samples {
-            let other: u32 = j as u32 + rng.uniform_uint32_bounded((n_samples - j) as u32);
+            let other: u32 = j + rng.uniform_uint32_bounded(n_samples - j);
             if i == 0 {
                 let tmp = samples[j as usize].x;
                 samples[j as usize].x = samples[other as usize].x;

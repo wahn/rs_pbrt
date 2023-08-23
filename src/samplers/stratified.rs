@@ -135,7 +135,7 @@ impl StratifiedSampler {
         // generate arrays of stratified samples for the pixel
         for i in 0..self.samples_1d_array_sizes.len() {
             for j in 0..self.samples_per_pixel {
-                let count: i32 = self.samples_1d_array_sizes[i as usize];
+                let count: i32 = self.samples_1d_array_sizes[i];
                 let samples: &mut [Float] =
                     &mut self.sample_array_1d[i][(j as usize * count as usize)..];
                 stratified_sample_1d(samples, count, &mut self.rng, self.jitter_samples);
@@ -144,9 +144,9 @@ impl StratifiedSampler {
         }
         for i in 0..self.samples_2d_array_sizes.len() {
             for j in 0..self.samples_per_pixel {
-                let count: u32 = self.samples_2d_array_sizes[i as usize] as u32;
+                let count: u32 = self.samples_2d_array_sizes[i] as u32;
                 latin_hypercube(
-                    &mut self.sample_array_2d[i as usize][(j as usize * count as usize)..],
+                    &mut self.sample_array_2d[i][(j as usize * count as usize)..],
                     count,
                     // 2,
                     &mut self.rng,

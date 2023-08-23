@@ -237,7 +237,7 @@ pub fn create_ply_mesh<S: BuildHasher>(
     // look up an alpha texture, if applicable
     let mut alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
     let alpha_tex_name: String = params.find_texture("alpha");
-    if alpha_tex_name != "" {
+    if !alpha_tex_name.is_empty() {
         alpha_tex = match float_textures.get(alpha_tex_name.as_str()) {
             Some(float_texture) => Some(float_texture.clone()),
             None => {
@@ -253,7 +253,7 @@ pub fn create_ply_mesh<S: BuildHasher>(
     }
     let mut shadow_alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
     let shadow_alpha_tex_name: String = params.find_texture("shadowalpha");
-    if shadow_alpha_tex_name != "" {
+    if !shadow_alpha_tex_name.is_empty() {
         shadow_alpha_tex = match float_textures.get(shadow_alpha_tex_name.as_str()) {
             Some(float_texture) => Some(float_texture.clone()),
             None => {
@@ -283,10 +283,7 @@ pub fn create_ply_mesh<S: BuildHasher>(
     ));
     let mut shapes: Vec<Arc<Shape>> = Vec::new();
     for id in 0..mesh.n_triangles {
-        let triangle = Arc::new(Shape::Trngl(Triangle::new(
-            mesh.clone(),
-            id.try_into().unwrap(),
-        )));
+        let triangle = Arc::new(Shape::Trngl(Triangle::new(mesh.clone(), id)));
         shapes.push(triangle.clone());
     }
     shapes
