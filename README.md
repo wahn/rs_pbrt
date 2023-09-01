@@ -26,7 +26,7 @@ https://www.rs-pbrt.org/doc/crates/rs_pbrt/index.html
 ```shell
 > cargo build --release --no-default-features
 > ./target/release/rs_pbrt --help
-rs_pbrt version 0.9.9 (unknown) [Detected 28 cores]
+rs_pbrt version 0.9.10 (unknown) [Detected 28 cores]
 
 Physically based rendering (PBR) with Rust
 
