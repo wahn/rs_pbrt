@@ -2,10 +2,13 @@
 //! class that implements the **Integrator** interface.
 
 // std
-use std::sync::Arc;
+use std::sync::atomic::Ordering;
+use std::sync::{Arc, RwLock};
 // pbrt
 use crate::blockqueue::BlockQueue;
 use crate::core::camera::{Camera, CameraSample};
+use crate::core::display::Preview;
+use crate::core::film::Pixel;
 use crate::core::geometry::{pnt2_inside_exclusivei, vec3_abs_dot_nrmf};
 use crate::core::geometry::{Bounds2i, Point2f, Point2i, Ray, Vector2i, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -17,6 +20,7 @@ use crate::core::sampler::Sampler;
 use crate::core::sampling::power_heuristic;
 use crate::core::sampling::Distribution1D;
 use crate::core::scene::Scene;
+use crate::core::spectrum::xyz_to_rgb;
 use crate::integrators::ao::AOIntegrator;
 use crate::integrators::bdpt::BDPTIntegrator;
 use crate::integrators::directlighting::DirectLightingIntegrator;
@@ -36,12 +40,14 @@ pub enum Integrator {
 }
 
 impl Integrator {
-    pub fn render(&mut self, scene: &Scene, num_threads: u8) {
+    pub fn render(&mut self, scene: &Scene, num_threads: u8, display_server: Option<String>) {
         match self {
             Integrator::BDPT(integrator) => integrator.render(scene, num_threads),
             Integrator::MLT(integrator) => integrator.render(scene, num_threads),
             Integrator::SPPM(integrator) => integrator.render(scene, num_threads),
-            Integrator::Sampler(integrator) => integrator.render(scene, num_threads),
+            Integrator::Sampler(integrator) => {
+                integrator.render(scene, num_threads, display_server)
+            }
         }
     }
 }
@@ -67,7 +73,7 @@ impl SamplerIntegrator {
     /// All [SamplerIntegrators](enum.SamplerIntegrator.html) use the
     /// same render loop, but call an individual
     /// [li()](enum.SamplerIntegrator.html#method.li) method.
-    pub fn render(&mut self, scene: &Scene, num_threads: u8) {
+    pub fn render(&mut self, scene: &Scene, num_threads: u8, display_server: Option<String>) {
         let film = self.get_camera().get_film();
         let sample_bounds: Bounds2i = film.get_sample_bounds();
         self.preprocess(scene);
@@ -98,6 +104,7 @@ impl SamplerIntegrator {
             let camera = &self.get_camera();
             let film = &film;
             let pixel_bounds = &self.get_pixel_bounds();
+            let address = display_server.unwrap_or("".to_string());
             crossbeam::scope(|scope| {
                 let (pixel_tx, pixel_rx) = crossbeam_channel::bounded(num_cores);
                 // spawn worker threads
@@ -122,7 +129,7 @@ impl SamplerIntegrator {
                             let mut film_tile = film.get_film_tile(&tile_bounds);
                             for pixel in &tile_bounds {
                                 tile_sampler.start_pixel(pixel);
-                                if !pnt2_inside_exclusivei(pixel, pixel_bounds) {
+                                if !pnt2_inside_exclusivei(pixel, &pixel_bounds) {
                                     continue;
                                 }
                                 let mut done: bool = false;
@@ -140,7 +147,7 @@ impl SamplerIntegrator {
                                     ray.scale_differentials(
                                         1.0 as Float
                                             / (tile_sampler.get_samples_per_pixel() as Float)
-                                                .sqrt(),
+                                            .sqrt(),
                                     );
                                     // TODO: ++nCameraRays;
                                     // evaluate radiance along camera ray
@@ -207,14 +214,64 @@ impl SamplerIntegrator {
                 }
                 // spawn thread to collect pixels and render image to file
                 scope.spawn(move |_| {
-                    for _ in pbr::PbIter::new(0..bq.len()) {
-                        let film_tile = pixel_rx.recv().unwrap();
-                        // merge image tile into _Film_
-                        film.merge_film_tile(&film_tile);
-                    }
+                    crossbeam::scope(|sub_scope| {
+                        // This should not
+                        let display = Preview::connect_to_display_server(&address);
+                        let connected = display.is_ok();
+                        let exit_thread_clone = if connected {
+                            Some(display.as_ref().unwrap().exit_thread.clone())
+                        } else {
+                            eprintln!("Could not connect to tev");
+                            None
+                        };
+
+                        if connected {
+                            let display = display.unwrap();
+                            let arc = Arc::new(&film.pixels);
+
+                            // If we always need this function and never need another one we can move this inside the display
+                            let get_values = move |b: Bounds2i, arc: Arc<&RwLock<Vec<Pixel>>>, width: usize, values: &mut Vec<Vec<Float>>| {
+                                for col in b.p_min.y..b.p_max.y {
+                                    for row in b.p_min.x..b.p_max.x {
+                                        let v = {
+                                            let vec = arc.read().unwrap();
+                                            let mut rgb = [0.0; 3];
+                                            let pixels = &vec[col as usize * width + row as usize];
+                                            xyz_to_rgb(&pixels.xyz, &mut rgb);
+
+                                            let filter_weight_sum = pixels.filter_weight_sum;
+                                            if filter_weight_sum != 0.0 as Float {
+                                                let inv_wt: Float = 1.0 as Float / filter_weight_sum;
+                                                rgb[0] = (rgb[0] * inv_wt).max(0.0 as Float);
+                                                rgb[1] = (rgb[1] * inv_wt).max(0.0 as Float);
+                                                rgb[2] = (rgb[2] * inv_wt).max(0.0 as Float);
+                                            }
+                                            rgb
+                                        };
+
+                                        for (channel, value) in values.iter_mut().zip(v) {
+                                            // Todo: We probably need to scale the values here?
+                                            channel.push(value);
+                                        }
+                                    }
+                                }
+                            };
+
+                            display.display_dynamic("rs_pbrt", film.full_resolution,
+                                                    vec!["R".to_string(), "G".to_string(), "B".to_string()],
+                                                    sub_scope, arc, get_values);
+                        }
+                        for _ in pbr::PbIter::new(0..bq.len()) {
+                            let film_tile = pixel_rx.recv().unwrap();
+                            // merge image tile into _Film_
+                            film.merge_film_tile(&film_tile);
+                        }
+                        if let Some(exit) = exit_thread_clone {
+                            exit.store(true, Ordering::Relaxed);
+                        }
+                    }).unwrap_or_default();
                 });
-            })
-            .unwrap();
+            }).expect("What am I even?");
         }
         film.write_image(1.0 as Float);
     }
@@ -442,18 +499,18 @@ pub fn estimate_direct(
         let mut f: Spectrum = Spectrum::new(0.0);
         if it.is_surface_interaction() {
             // evaluate BSDF for light sampling strategy
-            if let Some(bsdf) = it.get_bsdf() {
+            if let Some(ref bsdf) = it.get_bsdf() {
                 if let Some(shading_n) = it.get_shading_n() {
-                    f = bsdf.f(it.get_wo(), &wi, bsdf_flags)
-                        * Spectrum::new(vec3_abs_dot_nrmf(&wi, shading_n));
-                    scattering_pdf = bsdf.pdf(it.get_wo(), &wi, bsdf_flags);
+                    f = bsdf.f(&it.get_wo(), &wi, bsdf_flags)
+                        * Spectrum::new(vec3_abs_dot_nrmf(&wi, &shading_n));
+                    scattering_pdf = bsdf.pdf(&it.get_wo(), &wi, bsdf_flags);
                     // TODO: println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
                 }
             }
         } else {
             // evaluate phase function for light sampling strategy
             if let Some(ref phase) = it.get_phase() {
-                let p: Float = phase.p(it.get_wo(), &wi);
+                let p: Float = phase.p(&it.get_wo(), &wi);
                 f = Spectrum::new(p);
                 scattering_pdf = p;
             }
@@ -483,17 +540,17 @@ pub fn estimate_direct(
         if it.is_surface_interaction() {
             // sample scattered direction for surface interactions
             let mut sampled_type: u8 = 0_u8;
-            if let Some(bsdf) = it.get_bsdf() {
+            if let Some(ref bsdf) = it.get_bsdf() {
                 if let Some(shading_n) = it.get_shading_n() {
                     f = bsdf.sample_f(
-                        it.get_wo(),
+                        &it.get_wo(),
                         &mut wi,
                         &u_scattering,
                         &mut scattering_pdf,
                         bsdf_flags,
                         &mut sampled_type,
                     );
-                    f *= Spectrum::new(vec3_abs_dot_nrmf(&wi, shading_n));
+                    f *= Spectrum::new(vec3_abs_dot_nrmf(&wi, &shading_n));
                     sampled_specular = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
                 }
             } else {
@@ -502,7 +559,7 @@ pub fn estimate_direct(
         } else {
             // sample scattered direction for medium interactions
             if let Some(ref phase) = it.get_phase() {
-                let p: Float = phase.sample_p(it.get_wo(), &mut wi, u_scattering);
+                let p: Float = phase.sample_p(&it.get_wo(), &mut wi, u_scattering);
                 f = Spectrum::new(p);
                 scattering_pdf = p;
             }
@@ -538,20 +595,20 @@ pub fn estimate_direct(
                         let primitive = unsafe { &*primitive_raw };
                         if let Some(area_light) = primitive.get_area_light() {
                             let pa = &*area_light as *const _ as *const usize;
-                            let pl = light as *const _ as *const usize;
+                            let pl = &*light as *const _ as *const usize;
                             if pa == pl {
                                 li = light_isect.le(&-wi);
                             }
                         }
                     }
                 }
-            } else if scene.intersect(&ray, &mut light_isect) {
+            } else if scene.intersect(&mut ray, &mut light_isect) {
                 found_surface_interaction = true;
                 if let Some(primitive_raw) = light_isect.primitive {
                     let primitive = unsafe { &*primitive_raw };
                     if let Some(area_light) = primitive.get_area_light() {
                         let pa = &*area_light as *const _ as *const usize;
-                        let pl = light as *const _ as *const usize;
+                        let pl = &*light as *const _ as *const usize;
                         if pa == pl {
                             li = light_isect.le(&-wi);
                         }
@@ -559,7 +616,7 @@ pub fn estimate_direct(
                 }
             }
             if !found_surface_interaction {
-                li = light.le(&ray);
+                li = light.le(&mut ray);
             }
             if !li.is_black() {
                 ld += f * li * tr * weight / scattering_pdf;

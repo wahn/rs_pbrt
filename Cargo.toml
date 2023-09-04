@@ -21,6 +21,7 @@ byteorder = "1.4.3"
 clap = { version = "4.4.2", features = ["derive"] }
 crossbeam = "0.8.2"
 crossbeam-channel = "0.5.8"
+crossbeam-utils = "0.8.16"
 hexf = "0.2.1"
 image = "0.24.7"
 impl_ops = "0.1.1"
@@ -35,6 +36,7 @@ rayon = "1.7.0"
 smallvec = "1.11.0"
 strum = "0.25.0"
 strum_macros = "0.25.2"
+tev_client = "0.5.2"
 typed-arena = "2.0.2"
 
 [[bin]]

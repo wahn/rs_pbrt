@@ -3513,7 +3513,7 @@ fn main() -> std::io::Result<()> {
         if let Some(mut integrator) = some_integrator {
             let scene = make_scene(&render_options.primitives, render_options.lights);
             let num_threads: u8 = num_cpus::get() as u8;
-            integrator.render(&scene, num_threads);
+            integrator.render(&scene, num_threads, None);
         } else {
             panic!("Unable to create integrator.");
         }
@@ -3540,7 +3540,7 @@ fn main() -> std::io::Result<()> {
         if let Some(mut integrator) = some_integrator {
             let scene = make_scene(&render_options.primitives, render_options.lights);
             let num_threads: u8 = num_cpus::get() as u8;
-            integrator.render(&scene, num_threads);
+            integrator.render(&scene, num_threads, None);
         } else {
             panic!("Unable to create integrator.");
         }

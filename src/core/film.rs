@@ -36,8 +36,8 @@ const FILTER_TABLE_WIDTH: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct Pixel {
-    xyz: [Float; 3],
-    filter_weight_sum: Float,
+    pub(crate) xyz: [Float; 3],
+    pub(crate) filter_weight_sum: Float,
     splat_xyz: [Float; 3],
     // pad: Float,
 }

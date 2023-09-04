@@ -64,6 +64,9 @@ struct Args {
     /// The path to the file to read
     #[arg(long, short)]
     path: std::path::PathBuf,
+    /// The address and port of the display server
+    #[structopt(long = "display-server")]
+    display_server: Option<String>,
 }
 
 // Accelerator
@@ -903,6 +906,7 @@ fn main() {
     let cropx1: f32 = args.cropx1;
     let cropy0: f32 = args.cropy0;
     let cropy1: f32 = args.cropy1;
+    let display_server: Option<String> = args.display_server;
     println!("Copyright (c) 2016-2023 Jan Douglas Bert Walter.");
     println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
     println!();
@@ -913,6 +917,7 @@ fn main() {
         cropx1,
         cropy0,
         cropy1,
+        display_server,
     );
     parse_file(
         args.path.into_os_string().into_string().unwrap(),
