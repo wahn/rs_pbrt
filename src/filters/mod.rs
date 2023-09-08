@@ -20,7 +20,6 @@
 //! use rs_pbrt::filters::boxfilter::BoxFilter;
 //! use rs_pbrt::core::geometry::Vector2f;
 //!
-//! fn main() {
 //!     let xw: Float = 0.5;
 //!     let yw: Float = 0.5;
 //!     let box_filter = BoxFilter {
@@ -32,7 +31,6 @@
 //!     };
 //!
 //!     println!("box_filter = {:?}", box_filter);
-//! }
 //! ```
 //!
 //! ## Gaussian Filter
@@ -48,7 +46,6 @@
 //! use rs_pbrt::filters::gaussian::GaussianFilter;
 //! use rs_pbrt::core::geometry::Vector2f;
 //!
-//! fn main() {
 //!     let xw: Float = 2.0;
 //!     let yw: Float = 2.0;
 //!     let alpha: Float = 2.0;
@@ -66,7 +63,6 @@
 //!     };
 //!
 //!     println!("gaussian_filter = {:?}", gaussian_filter);
-//! }
 //! ```
 //!
 //! ## MitchellFilter
@@ -76,7 +72,6 @@
 //! use rs_pbrt::core::pbrt::Float;
 //! use rs_pbrt::filters::mitchell::MitchellNetravali;
 //!
-//! fn main() {
 //!     let xwidth: Float = 2.0;
 //!     let ywidth: Float = 2.0;
 //!     let b: Float = 1.0 / 3.0;
@@ -84,7 +79,6 @@
 //!     let mitchell_filter = MitchellNetravali::new(xwidth, ywidth, b, c);
 //!
 //!     println!("mitchell_filter = {:?}", mitchell_filter);
-//! }
 //! ```
 //!
 //! ## LanczosSincFilter
@@ -94,7 +88,6 @@
 //! use rs_pbrt::core::pbrt::Float;
 //! use rs_pbrt::filters::sinc::LanczosSincFilter;
 //!
-//! fn main() {
 //!     let xw: Float = 4.0;
 //!     let yw: Float = 4.0;
 //!     let radius: Vector2f = Vector2f { x: xw, y: yw };
@@ -102,7 +95,6 @@
 //!     let sinc_filter = LanczosSincFilter::new(radius, tau);
 //!
 //!     println!("sinc_filter = {:?}", sinc_filter);
-//! }
 //! ```
 //!
 //! ## TriangleFilter
@@ -112,7 +104,6 @@
 //! use rs_pbrt::core::pbrt::Float;
 //! use rs_pbrt::filters::triangle::TriangleFilter;
 //!
-//! fn main() {
 //!     let xw: Float = 2.0;
 //!     let yw: Float = 2.0;
 //!     let triangle_filter = TriangleFilter {
@@ -124,7 +115,6 @@
 //!     };
 //!
 //!     println!("triangle_filter = {:?}", triangle_filter);
-//! }
 //! ```
 //!
 

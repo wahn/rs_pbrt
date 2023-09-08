@@ -50,7 +50,7 @@ impl<'a, T: Send + Sync> DisplayItem<'a, T> {
     pub fn display_with_tev_client(&mut self, client: &mut TevClient) -> bool {
         // Open image if not opened already
         if !self.opened_image {
-            if let Ok(_) = self.send_create_image_packet(client) {
+            if self.send_create_image_packet(client).is_ok() {
                 self.opened_image = true;
             } else {
                 return false;
@@ -96,7 +96,7 @@ impl<'a, T: Send + Sync> DisplayItem<'a, T> {
         let packet = PacketUpdateImage {
             image_name: &self.title,
             grab_focus: false,
-            channel_names: &vec!["R", "G", "B"],
+            channel_names: &["R", "G", "B"],
             channel_offsets: &[1, 2, 3],
             channel_strides: &[3, 3, 3],
             x: 0,

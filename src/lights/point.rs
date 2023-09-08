@@ -63,7 +63,7 @@ impl PointLight {
         *pdf = 1.0 as Float;
         light_intr.p = self.p_light;
         light_intr.time = iref.time;
-        vis.p0 = Some(&iref);
+        vis.p0 = Some(iref);
         vis.p1 = Some(light_intr);
         self.i / pnt3_distance_squaredf(&self.p_light, &iref.p)
     }

@@ -129,7 +129,7 @@ impl SamplerIntegrator {
                             let mut film_tile = film.get_film_tile(&tile_bounds);
                             for pixel in &tile_bounds {
                                 tile_sampler.start_pixel(pixel);
-                                if !pnt2_inside_exclusivei(pixel, &pixel_bounds) {
+                                if !pnt2_inside_exclusivei(pixel, pixel_bounds) {
                                     continue;
                                 }
                                 let mut done: bool = false;
@@ -499,18 +499,18 @@ pub fn estimate_direct(
         let mut f: Spectrum = Spectrum::new(0.0);
         if it.is_surface_interaction() {
             // evaluate BSDF for light sampling strategy
-            if let Some(ref bsdf) = it.get_bsdf() {
+            if let Some(bsdf) = it.get_bsdf() {
                 if let Some(shading_n) = it.get_shading_n() {
-                    f = bsdf.f(&it.get_wo(), &wi, bsdf_flags)
-                        * Spectrum::new(vec3_abs_dot_nrmf(&wi, &shading_n));
-                    scattering_pdf = bsdf.pdf(&it.get_wo(), &wi, bsdf_flags);
+                    f = bsdf.f(it.get_wo(), &wi, bsdf_flags)
+                        * Spectrum::new(vec3_abs_dot_nrmf(&wi, shading_n));
+                    scattering_pdf = bsdf.pdf(it.get_wo(), &wi, bsdf_flags);
                     // TODO: println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
                 }
             }
         } else {
             // evaluate phase function for light sampling strategy
             if let Some(ref phase) = it.get_phase() {
-                let p: Float = phase.p(&it.get_wo(), &wi);
+                let p: Float = phase.p(it.get_wo(), &wi);
                 f = Spectrum::new(p);
                 scattering_pdf = p;
             }
@@ -540,17 +540,17 @@ pub fn estimate_direct(
         if it.is_surface_interaction() {
             // sample scattered direction for surface interactions
             let mut sampled_type: u8 = 0_u8;
-            if let Some(ref bsdf) = it.get_bsdf() {
+            if let Some(bsdf) = it.get_bsdf() {
                 if let Some(shading_n) = it.get_shading_n() {
                     f = bsdf.sample_f(
-                        &it.get_wo(),
+                        it.get_wo(),
                         &mut wi,
                         &u_scattering,
                         &mut scattering_pdf,
                         bsdf_flags,
                         &mut sampled_type,
                     );
-                    f *= Spectrum::new(vec3_abs_dot_nrmf(&wi, &shading_n));
+                    f *= Spectrum::new(vec3_abs_dot_nrmf(&wi, shading_n));
                     sampled_specular = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
                 }
             } else {
@@ -559,7 +559,7 @@ pub fn estimate_direct(
         } else {
             // sample scattered direction for medium interactions
             if let Some(ref phase) = it.get_phase() {
-                let p: Float = phase.sample_p(&it.get_wo(), &mut wi, u_scattering);
+                let p: Float = phase.sample_p(it.get_wo(), &mut wi, u_scattering);
                 f = Spectrum::new(p);
                 scattering_pdf = p;
             }
@@ -595,20 +595,20 @@ pub fn estimate_direct(
                         let primitive = unsafe { &*primitive_raw };
                         if let Some(area_light) = primitive.get_area_light() {
                             let pa = &*area_light as *const _ as *const usize;
-                            let pl = &*light as *const _ as *const usize;
+                            let pl = light as *const _ as *const usize;
                             if pa == pl {
                                 li = light_isect.le(&-wi);
                             }
                         }
                     }
                 }
-            } else if scene.intersect(&mut ray, &mut light_isect) {
+            } else if scene.intersect(&ray, &mut light_isect) {
                 found_surface_interaction = true;
                 if let Some(primitive_raw) = light_isect.primitive {
                     let primitive = unsafe { &*primitive_raw };
                     if let Some(area_light) = primitive.get_area_light() {
                         let pa = &*area_light as *const _ as *const usize;
-                        let pl = &*light as *const _ as *const usize;
+                        let pl = light as *const _ as *const usize;
                         if pa == pl {
                             li = light_isect.le(&-wi);
                         }
@@ -616,7 +616,7 @@ pub fn estimate_direct(
                 }
             }
             if !found_surface_interaction {
-                li = light.le(&mut ray);
+                li = light.le(&ray);
             }
             if !li.is_black() {
                 ld += f * li * tr * weight / scattering_pdf;

@@ -170,7 +170,7 @@ impl GonioPhotometricLight {
         i: &Spectrum,
         texname: String,
     ) -> Self {
-        if texname != "" {
+        if !texname.is_empty() {
             let file = std::fs::File::open(texname).unwrap();
             let reader = BufReader::new(file);
             let img_result = image::codecs::hdr::HdrDecoder::with_strictness(reader, false);
@@ -211,7 +211,7 @@ impl GonioPhotometricLight {
                             n_samples: 1_i32,
                             medium_interface: MediumInterface::default(),
                             light_to_world: *light_to_world,
-                            world_to_light: Transform::inverse(&*light_to_world),
+                            world_to_light: Transform::inverse(light_to_world),
                         };
                     }
                 }
@@ -259,7 +259,7 @@ impl GonioPhotometricLight {
         *pdf = 1.0 as Float;
         light_intr.p = self.p_light;
         light_intr.time = iref.time;
-        vis.p0 = Some(&iref);
+        vis.p0 = Some(iref);
         vis.p1 = Some(light_intr);
         self.i * self.scale(&-*wi) / pnt3_distance_squaredf(&self.p_light, &iref.p)
     }

@@ -91,7 +91,7 @@ impl VolPathIntegrator {
             let mut mi_opt: Option<MediumInteraction> = None;
             // intersect _ray_ with scene and store intersection in _isect_
             let mut isect: SurfaceInteraction = SurfaceInteraction::default();
-            if scene.intersect(&mut ray, &mut isect) {
+            if scene.intersect(&ray, &mut isect) {
                 // sample the participating medium, if present
                 if let Some(ref medium) = ray.medium {
                     let (spectrum, option) = medium.sample(&ray, sampler);
@@ -335,7 +335,7 @@ impl VolPathIntegrator {
                 // add emitted light from the environment
                 if bounces == 0 || specular_bounce {
                     for light in &scene.infinite_lights {
-                        l += beta * light.le(&mut ray);
+                        l += beta * light.le(&ray);
                     }
                 }
                 // terminate path if ray escaped
