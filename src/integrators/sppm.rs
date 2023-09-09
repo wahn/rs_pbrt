@@ -78,8 +78,10 @@ impl SPPMIntegrator {
         let n_pixels: i32 = pixel_bounds.area();
         let mut pixels: Vec<SPPMPixel> = Vec::with_capacity(n_pixels as usize);
         for _i in 0..n_pixels as usize {
-            let mut pixel = SPPMPixel::default();
-            pixel.radius = self.initial_search_radius;
+            let pixel = SPPMPixel {
+                radius: self.initial_search_radius,
+                ..Default::default()
+            };
             pixels.push(pixel);
         }
         let inv_sqrt_spp: Float = 1.0 as Float / (self.n_iterations as Float).sqrt();
@@ -186,7 +188,7 @@ impl SPPMIntegrator {
                                                 // TODO: ++totalPhotonSurfaceInteractions;
                                                 let mut isect: SurfaceInteraction =
                                                     SurfaceInteraction::default();
-                                                if scene.intersect(&mut ray, &mut isect) {
+                                                if scene.intersect(&ray, &mut isect) {
                                                     // process SPPM camera ray intersection
 
                                                     // compute BSDF at SPPM camera ray intersection
@@ -282,7 +284,7 @@ impl SPPMIntegrator {
                                                     // accumulate light contributions for
                                                     // ray with no intersection
                                                     for light in &scene.lights {
-                                                        pixel.1 += beta * light.le(&mut ray);
+                                                        pixel.1 += beta * light.le(&ray);
                                                     }
                                                     break;
                                                 }
@@ -549,7 +551,7 @@ impl SPPMIntegrator {
                                         // follow photon path through scene and record intersections
                                         for depth in 0..integrator.max_depth {
 					                                  let mut isect: SurfaceInteraction = SurfaceInteraction::default();
-					                                  if scene.intersect(&mut photon_ray, &mut isect) {
+					                                  if scene.intersect(&photon_ray, &mut isect) {
                                                 // TODO: ++totalPhotonSurfaceInteractions;
                                                 if depth > 0 {
                                                     // add photon contribution to nearby visible points

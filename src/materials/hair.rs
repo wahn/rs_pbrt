@@ -352,7 +352,7 @@ impl HairBSDF {
         let cos_gamma_t: Float = (0.0 as Float).max(x).sqrt();
         // Float gammaT = SafeASin(sinGammaT);
         let x: Float = sin_gamma_t;
-        assert!(x >= -1.0001 && x <= 1.0001);
+        assert!((-1.0001..=1.0001).contains(&x));
         let gamma_t: Float = clamp_t(x, -1.0 as Float, 1.0 as Float).asin();
         // compute the transmittance _t_ of a single path through the cylinder
         let t: Spectrum = (-self.sigma_a * (2.0 as Float * cos_gamma_t / cos_theta_t)).exp();
@@ -567,7 +567,7 @@ impl HairBSDF {
         let etap: Float = (self.eta * self.eta - (sin_theta_o * sin_theta_o)).sqrt() / cos_theta_o;
         let sin_gamma_t: Float = self.h / etap;
         let x: Float = sin_gamma_t;
-        assert!(x >= -1.0001 && x <= 1.0001);
+        assert!((-1.0001..=1.0001).contains(&x));
         let gamma_t: Float = clamp_t(x, -1.0 as Float, 1.0 as Float).asin();
         // compute PDF for $A_p$ terms
         let ap_pdf: [Float; (P_MAX + 1) as usize] = self.compute_ap_pdf(cos_theta_o);
@@ -683,8 +683,8 @@ fn i0(x: Float) -> Float {
     let mut i4: i32 = 1_i32;
     // i0(x) \approx Sum_i x^(2i) / (4^i (i!)^2)
     for i in 0..10 {
-        if i as i32 > 1_i32 {
-            ifact *= i as i32;
+        if i > 1_i32 {
+            ifact *= i;
         }
         val += x2i / (i4 as Float * (ifact as Float * ifact as Float));
         x2i *= x * x;

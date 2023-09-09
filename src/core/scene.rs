@@ -89,7 +89,7 @@ impl Scene {
             let hit_surface: bool = self.intersect(ray, isect);
             // accumulate beam transmittance for ray segment
             if let Some(ref medium_arc) = ray.medium {
-                *tr *= medium_arc.tr(&ray, sampler);
+                *tr *= medium_arc.tr(ray, sampler);
             }
             // initialize next ray segment or terminate transmittance computation
             if !hit_surface {

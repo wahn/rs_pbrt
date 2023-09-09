@@ -85,7 +85,7 @@ impl DirectLightingIntegrator {
             let mode: TransportMode = TransportMode::Radiance;
             isect.compute_scattering_functions(ray, false, mode);
             if isect.bsdf.is_none() {
-                return self.li(&mut isect.spawn_ray(&ray.d), scene, sampler, depth);
+                return self.li(&isect.spawn_ray(&ray.d), scene, sampler, depth);
             }
             let wo: Vector3f = isect.common.wo;
             l += isect.le(&wo);
@@ -181,7 +181,7 @@ impl DirectLightingIntegrator {
                     };
                     rd.differential = Some(diff);
                 }
-                f * self.li(&mut rd, scene, sampler, depth + 1)
+                f * self.li(&rd, scene, sampler, depth + 1)
                     * Spectrum::new(vec3_abs_dot_nrmf(&wi, &ns) / pdf)
             } else {
                 Spectrum::new(0.0)
@@ -248,7 +248,7 @@ impl DirectLightingIntegrator {
                     };
                     rd.differential = Some(diff);
                 }
-                f * self.li(&mut rd, scene, sampler, depth + 1)
+                f * self.li(&rd, scene, sampler, depth + 1)
                     * Spectrum::new(vec3_abs_dot_nrmf(&wi, &ns) / pdf)
             } else {
                 Spectrum::new(0.0)

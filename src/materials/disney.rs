@@ -533,7 +533,7 @@ impl DisneyClearCoat {
             return Spectrum::zero();
         }
 
-        *pdf = self.pdf(wo, &wi);
+        *pdf = self.pdf(wo, wi);
 
         if let Some(sc) = self.sc_opt {
             sc * self.f(wo, wi)

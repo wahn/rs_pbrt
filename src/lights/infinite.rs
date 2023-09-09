@@ -178,7 +178,7 @@ impl InfiniteAreaLight {
         texmap: String,
     ) -> Self {
         // read texel data from _texmap_ and initialize _Lmap_
-        if texmap != "" {
+        if !texmap.is_empty() {
             let file = std::fs::File::open(texmap).unwrap();
             let reader = BufReader::new(file);
             let img_result = image::codecs::hdr::HdrDecoder::with_strictness(reader, false);
@@ -240,7 +240,7 @@ impl InfiniteAreaLight {
                             n_samples: std::cmp::max(1_i32, n_samples),
                             medium_interface: MediumInterface::default(),
                             light_to_world: *light_to_world,
-                            world_to_light: Transform::inverse(&*light_to_world),
+                            world_to_light: Transform::inverse(light_to_world),
                         };
                     }
                 }
@@ -334,7 +334,7 @@ impl InfiniteAreaLight {
         // TODO: SpectrumType::Illuminant
         light_intr.p = iref.p + *wi * (2.0 as Float * world_radius);
         light_intr.time = iref.time;
-        vis.p0 = Some(&iref);
+        vis.p0 = Some(iref);
         vis.p1 = Some(light_intr);
         self.lmap.lookup_pnt_flt(uv, 0.0 as Float)
     }
@@ -355,7 +355,7 @@ impl InfiniteAreaLight {
         let mut world_center_ref = self.world_center.write().unwrap();
         let mut world_radius_ref = self.world_radius.write().unwrap();
         Bounds3f::bounding_sphere(
-            &scene.world_bound(),
+            scene.world_bound(),
             &mut world_center_ref,
             &mut world_radius_ref,
         );
@@ -377,7 +377,7 @@ impl InfiniteAreaLight {
     }
     pub fn pdf_li(&self, _iref: &dyn Interaction, w: &Vector3f) -> Float {
         // TODO: ProfilePhase _(Prof::LightPdf);
-        let wi: Vector3f = self.world_to_light.transform_vector(&w);
+        let wi: Vector3f = self.world_to_light.transform_vector(w);
         let theta: Float = spherical_theta(&wi);
         let phi: Float = spherical_phi(&wi);
         let sin_theta: Float = theta.sin();

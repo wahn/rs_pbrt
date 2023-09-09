@@ -78,9 +78,9 @@ impl DiffuseAreaLight {
             return Spectrum::default();
         }
         *wi = (light_intr.p - iref.p).normalize();
-        vis.p0 = Some(&iref);
+        vis.p0 = Some(iref);
         vis.p1 = Some(light_intr);
-        self.l(&light_intr, &-*wi)
+        self.l(light_intr, &-*wi)
     }
     pub fn power(&self) -> Spectrum {
         // return (twoSided ? 2 : 1) * Lemit * area * Pi;
@@ -99,7 +99,7 @@ impl DiffuseAreaLight {
     }
     pub fn pdf_li(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
         // TODO: ProfilePhase _(Prof::LightPdf);
-        self.shape.pdf_with_ref_point(iref, &wi)
+        self.shape.pdf_with_ref_point(iref, wi)
     }
     pub fn sample_le(
         &self,
@@ -149,9 +149,9 @@ impl DiffuseAreaLight {
     pub fn pdf_le(&self, ray: &Ray, n: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
         *pdf_pos = self.shape.pdf(&InteractionCommon::default());
         if self.two_sided {
-            *pdf_dir = 0.5 as Float * cosine_hemisphere_pdf(nrm_abs_dot_vec3f(&n, &ray.d));
+            *pdf_dir = 0.5 as Float * cosine_hemisphere_pdf(nrm_abs_dot_vec3f(n, &ray.d));
         } else {
-            *pdf_dir = cosine_hemisphere_pdf(nrm_dot_vec3f(&n, &ray.d));
+            *pdf_dir = cosine_hemisphere_pdf(nrm_dot_vec3f(n, &ray.d));
         }
     }
     pub fn get_flags(&self) -> u8 {
@@ -162,7 +162,7 @@ impl DiffuseAreaLight {
     }
     // AreaLight
     pub fn l(&self, intr: &InteractionCommon, w: &Vector3f) -> Spectrum {
-        if self.two_sided || nrm_dot_vec3f(&intr.n, &w) > 0.0 as Float {
+        if self.two_sided || nrm_dot_vec3f(&intr.n, w) > 0.0 as Float {
             self.l_emit
         } else {
             Spectrum::new(0.0 as Float)

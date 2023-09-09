@@ -135,7 +135,7 @@ impl MLTSampler {
     }
     pub fn reject(&mut self) {
         for i in 0..self.x.len() {
-            if let Some(xi) = self.x.get_mut(i as usize) {
+            if let Some(xi) = self.x.get_mut(i) {
                 if xi.last_modification_iteration == self.current_iteration {
                     xi.restore();
                 }
@@ -505,7 +505,7 @@ impl MLTIntegrator {
                     rng.set_sequence(i as u64);
                     let bootstrap_index: usize =
                         bootstrap.sample_discrete(rng.uniform_float(), None);
-                    let depth: u32 = bootstrap_index as u32 % (self.max_depth as u32 + 1);
+                    let depth: u32 = bootstrap_index as u32 % (self.max_depth + 1);
                     // initialize local variables for selected state
                     let mut sampler: Box<Sampler> = Box::new(Sampler::MLT(MLTSampler::new(
                         self.mutations_per_pixel as i64,

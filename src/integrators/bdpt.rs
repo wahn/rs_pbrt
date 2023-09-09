@@ -40,9 +40,11 @@ pub struct EndpointInteraction<'a> {
 
 impl<'a> EndpointInteraction<'a> {
     pub fn new(p: &Point3f, time: Float) -> Self {
-        let mut common: InteractionCommon = InteractionCommon::default();
-        common.p = *p;
-        common.time = time;
+        let common: InteractionCommon = InteractionCommon {
+            p: *p,
+            time,
+            ..Default::default()
+        };
         EndpointInteraction {
             common,
             ..Default::default()
@@ -59,9 +61,11 @@ impl<'a> EndpointInteraction<'a> {
         ei
     }
     pub fn new_camera(camera: &'a Arc<Camera>, ray: &Ray) -> Self {
-        let mut common: InteractionCommon = InteractionCommon::default();
-        common.p = ray.o;
-        common.time = ray.time;
+        let common: InteractionCommon = InteractionCommon {
+            p: ray.o,
+            time: ray.time,
+            ..Default::default()
+        };
         let mut ei: EndpointInteraction = EndpointInteraction {
             common,
             camera: Some(camera),
@@ -77,9 +81,11 @@ impl<'a> EndpointInteraction<'a> {
         ei
     }
     pub fn new_light(light: &'a Arc<Light>, ray: &Ray, nl: &Normal3f) -> Self {
-        let mut common: InteractionCommon = InteractionCommon::default();
-        common.p = ray.o;
-        common.time = ray.time;
+        let common: InteractionCommon = InteractionCommon {
+            p: ray.o,
+            time: ray.time,
+            ..Default::default()
+        };
         let mut ei: EndpointInteraction = EndpointInteraction {
             common,
             light: Some(light),
@@ -113,9 +119,11 @@ impl<'a> EndpointInteraction<'a> {
         ei
     }
     pub fn new_ray(ray: &Ray) -> Self {
-        let mut common: InteractionCommon = InteractionCommon::default();
-        common.p = ray.position(1.0 as Float);
-        common.time = ray.time;
+        let common: InteractionCommon = InteractionCommon {
+            p: ray.position(1.0 as Float),
+            time: ray.time,
+            ..Default::default()
+        };
         let mut ei: EndpointInteraction = EndpointInteraction {
             common,
             ..Default::default()
@@ -183,11 +191,7 @@ impl<'a> Interaction for EndpointInteraction<'a> {
         &self.common.n
     }
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
-        if let Some(ref medium_interface) = self.common.medium_interface {
-            Some(medium_interface.clone())
-        } else {
-            None
-        }
+        self.common.medium_interface.as_ref().cloned()
     }
     fn get_bsdf(&self) -> Option<&Bsdf> {
         None
@@ -459,9 +463,9 @@ impl<'a> Vertex<'a> {
             VertexType::Medium => true,
             VertexType::Light => {
                 if let Some(ref ei) = self.ei {
-                    if let Some(ref light) = ei.light {
+                    if let Some(light) = ei.light {
                         let check: u8 = light.get_flags() & LightFlags::DeltaDirection as u8;
-                        check == 0 as u8
+                        check == 0_u8
                     } else {
                         false
                     }
@@ -506,7 +510,7 @@ impl<'a> Vertex<'a> {
         if self.vertex_type != VertexType::Light {
             return false;
         } else if let Some(ref ei) = self.ei {
-            if let Some(ref light) = ei.light {
+            if let Some(light) = ei.light {
                 let check: u8 = light.get_flags();
                 return is_delta_light(check);
             }
@@ -517,7 +521,7 @@ impl<'a> Vertex<'a> {
         if self.vertex_type != VertexType::Light {
             return false;
         } else if let Some(ref ei) = self.ei {
-            if let Some(ref light) = ei.light {
+            if let Some(light) = ei.light {
                 let check: u8 = light.get_flags() & LightFlags::Infinite as u8;
                 if check == LightFlags::Infinite as u8 {
                     return true;
@@ -546,7 +550,7 @@ impl<'a> Vertex<'a> {
             // return emitted radiance for infinite light sources
             let mut le: Spectrum = Spectrum::default();
             for light in &scene.infinite_lights {
-                let mut ray: Ray = Ray {
+                let ray: Ray = Ray {
                     o: self.p(),
                     d: -w,
                     t_max: Cell::new(Float::default()),
@@ -554,19 +558,21 @@ impl<'a> Vertex<'a> {
                     differential: None,
                     medium: None,
                 };
-                le += light.le(&mut ray);
+                le += light.le(&ray);
             }
             return le;
         } else if let Some(ref si) = self.si {
             if let Some(primitive_raw) = si.primitive {
                 let primitive = unsafe { &*primitive_raw };
                 if let Some(light) = primitive.get_area_light() {
-                    let mut iref: InteractionCommon = InteractionCommon::default();
-                    iref.p = si.common.p;
-                    iref.time = si.common.time;
-                    iref.p_error = si.common.p_error;
-                    iref.wo = si.common.wo;
-                    iref.n = si.common.n;
+                    let iref: InteractionCommon = InteractionCommon {
+                        p: si.common.p,
+                        time: si.common.time,
+                        p_error: si.common.p_error,
+                        wo: si.common.wo,
+                        n: si.common.n,
+                        ..Default::default()
+                    };
                     return light.l(&iref, &w);
                 }
             }
@@ -619,7 +625,7 @@ impl<'a> Vertex<'a> {
         let mut _unused: Float = 0.0;
         if self.vertex_type == VertexType::Camera {
             if let Some(ref ei) = self.ei {
-                if let Some(ref camera) = ei.camera {
+                if let Some(camera) = ei.camera {
                     let (_unused, pdf_flt_local) = camera.pdf_we(&ei.spawn_ray(&wn));
                     pdf_flt = pdf_flt_local;
                 }
@@ -650,13 +656,13 @@ impl<'a> Vertex<'a> {
             // compute planar sampling density for infinite light sources
             let mut world_center: Point3f = Point3f::default();
             let mut world_radius: Float = 0.0;
-            Bounds3f::bounding_sphere(&scene.world_bound(), &mut world_center, &mut world_radius);
+            Bounds3f::bounding_sphere(scene.world_bound(), &mut world_center, &mut world_radius);
             pdf = 1.0 as Float / (PI * world_radius * world_radius);
         } else {
             assert!(self.is_light());
             if self.vertex_type == VertexType::Light {
                 if let Some(ref ei) = self.ei {
-                    if let Some(ref light_ref) = ei.light {
+                    if let Some(light_ref) = ei.light {
                         // compute sampling density for non-infinite
                         // light sources
                         let mut pdf_pos: Float = 0.0;
@@ -733,13 +739,13 @@ impl<'a> Vertex<'a> {
             if self.vertex_type == VertexType::Light {
                 // a real light source (not geometry emitting light)
                 if let Some(ref ei) = self.ei {
-                    if let Some(ref light_ref) = ei.light {
+                    if let Some(light_ref) = ei.light {
                         // find light in light vector
                         for i in 0..scene.lights.len() {
                             let light = &scene.lights[i];
                             // use ** (alloc::arc::Arc<Light> **)
                             let pr = &**light_ref as *const _ as *const usize;
-                            let pl = &*light as *const _ as *const usize;
+                            let pl = light as *const _ as *const usize;
                             if pr == pl {
                                 // compute the discrete probability of
                                 // sampling _light_, _pdf_choice_
@@ -1084,9 +1090,9 @@ pub fn correct_shading_normal(
 ) -> Float {
     if mode == TransportMode::Importance {
         let num: Float =
-            vec3_abs_dot_nrmf(&wo, &isect.shading.n) * vec3_abs_dot_nrmf(&wi, &isect.common.n);
+            vec3_abs_dot_nrmf(wo, &isect.shading.n) * vec3_abs_dot_nrmf(&wi, &isect.common.n);
         let denom: Float =
-            vec3_abs_dot_nrmf(&wo, &isect.common.n) * vec3_abs_dot_nrmf(&wi, &isect.shading.n);
+            vec3_abs_dot_nrmf(wo, &isect.common.n) * vec3_abs_dot_nrmf(&wi, &isect.shading.n);
         // wi is occasionally perpendicular to isect.shading.n; this
         // is fine, but we don't want to return an infinite or NaN
         // value in that case.
@@ -1112,10 +1118,11 @@ pub fn generate_camera_subpath<'a>(
     }
     // TODO: ProfilePhase _(Prof::BDPTGenerateSubpath);
     // sample initial ray for camera subpath
-    let mut camera_sample: CameraSample = CameraSample::default();
-    camera_sample.p_film = p_film;
-    camera_sample.time = sampler.get_1d();
-    camera_sample.p_lens = sampler.get_2d();
+    let camera_sample: CameraSample = CameraSample {
+        p_film,
+        time: sampler.get_1d(),
+        p_lens: sampler.get_2d(),
+    };
     let mut ray: Ray = Ray::default();
     let mut beta: Spectrum =
         Spectrum::new(camera.generate_ray_differential(&camera_sample, &mut ray));
@@ -1254,13 +1261,8 @@ pub fn random_walk<'a>(
         // );
         let mut mi_opt: Option<MediumInteraction> = None;
         // trace a ray and sample the medium, if any
-        let found_intersection: bool;
         let mut isect: SurfaceInteraction = SurfaceInteraction::default();
-        if scene.intersect(&mut ray, &mut isect) {
-            found_intersection = true;
-        } else {
-            found_intersection = false;
-        }
+        let found_intersection: bool = scene.intersect(&ray, &mut isect);
         if let Some(ref medium) = ray.medium {
             let (spectrum, option) = medium.sample(&ray, sampler);
             *beta *= spectrum;
@@ -1278,7 +1280,7 @@ pub fn random_walk<'a>(
                 {
                     // record medium interaction in _path_ and compute forward density
                     let prev: &Vertex = &path[path.len() - 1];
-                    vertex = Vertex::create_medium_interaction(mi, &beta, pdf_fwd, prev);
+                    vertex = Vertex::create_medium_interaction(mi, beta, pdf_fwd, prev);
                 }
                 // if (++bounces >= maxDepth) break;
                 bounces += 1;
@@ -1311,7 +1313,7 @@ pub fn random_walk<'a>(
             if mode == TransportMode::Radiance {
                 let vertex: Vertex = Vertex::create_light_interaction(
                     EndpointInteraction::new_ray(&ray),
-                    &beta,
+                    beta,
                     pdf_fwd,
                 );
                 // store new vertex
@@ -1379,7 +1381,7 @@ pub fn random_walk<'a>(
                 si_eval.shape = None
             }
             let mut vertex: Vertex =
-                Vertex::create_surface_interaction(si_eval, &beta, pdf_fwd, &path[path.len() - 1]);
+                Vertex::create_surface_interaction(si_eval, beta, pdf_fwd, &path[path.len() - 1]);
             bounces += 1;
             if bounces as u32 >= max_depth {
                 // store new vertex
@@ -1445,7 +1447,7 @@ pub fn random_walk<'a>(
     bounces
 }
 
-pub fn g<'a>(scene: &'a Scene, sampler: &mut Sampler, v0: &Vertex, v1: &Vertex) -> Spectrum {
+pub fn g(scene: &Scene, sampler: &mut Sampler, v0: &Vertex, v1: &Vertex) -> Spectrum {
     // Vector3f d = v0.p() - v1.p();
     let mut d: Vector3f = v0.p() - v1.p();
     let mut g: Float = 1.0 / d.length_squared();
@@ -1509,7 +1511,7 @@ pub fn mis_weight<'a>(
     t: usize,
     light_pdf: Arc<Distribution1D>,
 ) -> Float {
-    if s + t == 2 as usize {
+    if s + t == 2_usize {
         return 1.0 as Float;
     }
     let mut sum_ri: Float = 0.0;
@@ -1908,9 +1910,9 @@ pub fn mis_weight<'a>(
             if let Some(ref callable) = qs {
                 if s > 1 {
                     overwrite.pdf_rev =
-                        callable.pdf(scene, Some(&light_vertices[s - 2]), &overwrite);
+                        callable.pdf(scene, Some(&light_vertices[s - 2]), overwrite);
                 } else {
-                    overwrite.pdf_rev = callable.pdf(scene, None, &overwrite);
+                    overwrite.pdf_rev = callable.pdf(scene, None, overwrite);
                 }
             }
         } else if t > 1 {
@@ -1992,7 +1994,7 @@ pub fn mis_weight<'a>(
             let pdf_rev;
             if s > 0 {
                 if let Some(ref qs_ref) = qs {
-                    pdf_rev = callable.pdf(scene, Some(&qs_ref), &camera_vertices[t - 2]);
+                    pdf_rev = callable.pdf(scene, Some(qs_ref), &camera_vertices[t - 2]);
                 } else {
                     pdf_rev = callable.pdf(scene, None, &camera_vertices[t - 2]);
                 }
@@ -2016,9 +2018,9 @@ pub fn mis_weight<'a>(
     if let Some(ref mut overwrite) = qs {
         if let Some(ref callable) = pt {
             if let Some(ref pt_ref) = pt_minus {
-                overwrite.pdf_rev = callable.pdf(scene, Some(&pt_ref), &overwrite);
+                overwrite.pdf_rev = callable.pdf(scene, Some(pt_ref), overwrite);
             } else {
-                overwrite.pdf_rev = callable.pdf(scene, None, &overwrite);
+                overwrite.pdf_rev = callable.pdf(scene, None, overwrite);
             }
         }
     }
@@ -2094,7 +2096,7 @@ pub fn mis_weight<'a>(
             }
             let pdf_rev;
             if let Some(ref pt_ref) = pt {
-                pdf_rev = callable.pdf(scene, Some(&pt_ref), &light_vertices[s - 2]);
+                pdf_rev = callable.pdf(scene, Some(pt_ref), &light_vertices[s - 2]);
             } else {
                 pdf_rev = callable.pdf(scene, None, &light_vertices[s - 2]);
             }
@@ -2247,19 +2249,16 @@ pub fn connect_bdpt<'a>(
                 VertexType::Medium => {
                     if let Some(ref mi) = light_vertices[s - 1].mi {
                         iref = mi.common.clone();
-                    } else {
                     }
                 }
                 VertexType::Surface => {
                     if let Some(ref si) = light_vertices[s - 1].si {
                         iref = si.common.clone();
-                    } else {
                     }
                 }
                 _ => {
                     if let Some(ref ei) = light_vertices[s - 1].ei {
                         iref = ei.common.clone();
-                    } else {
                     }
                 }
             }
@@ -2321,7 +2320,6 @@ pub fn connect_bdpt<'a>(
                         if let Some(ref medium_interface_arc) = mi.common.medium_interface {
                             iref.medium_interface = Some(medium_interface_arc.clone())
                         }
-                    } else {
                     }
                 }
                 VertexType::Surface => {
@@ -2331,7 +2329,6 @@ pub fn connect_bdpt<'a>(
                         iref.p_error = si.common.p_error;
                         iref.wo = si.common.wo;
                         iref.n = si.common.n;
-                    } else {
                     }
                 }
                 _ => {
@@ -2341,7 +2338,6 @@ pub fn connect_bdpt<'a>(
                         iref.p_error = ei.common.p_error;
                         iref.wo = ei.common.wo;
                         iref.n = ei.common.n;
-                    } else {
                     }
                 }
             }
@@ -2455,8 +2451,8 @@ pub fn connect_bdpt<'a>(
     l
 }
 
-pub fn infinite_light_density<'a>(
-    scene: &'a Scene,
+pub fn infinite_light_density(
+    scene: &Scene,
     light_distr: Arc<Distribution1D>,
     // const std::unordered_map<const Light *, size_t> &lightToDistrIndex,
     w: &Vector3f,

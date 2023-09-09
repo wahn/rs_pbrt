@@ -33,7 +33,7 @@ impl DistantLight {
     pub fn new(light_to_world: &Transform, l: &Spectrum, w_light: &Vector3f) -> Self {
         DistantLight {
             l: *l,
-            w_light: light_to_world.transform_vector(&*w_light).normalize(),
+            w_light: light_to_world.transform_vector(w_light).normalize(),
             world_center: RwLock::new(Point3f::default()),
             world_radius: RwLock::new(0.0),
             flags: LightFlags::DeltaDirection as u8,
@@ -60,7 +60,7 @@ impl DistantLight {
             iref.p + self.w_light * (2.0 as Float * *self.world_radius.read().unwrap());
         light_intr.p = p_outside;
         light_intr.time = iref.time;
-        vis.p0 = Some(&iref);
+        vis.p0 = Some(iref);
         vis.p1 = Some(light_intr);
         self.l
     }
@@ -79,7 +79,7 @@ impl DistantLight {
         let mut world_center_ref = self.world_center.write().unwrap();
         let mut world_radius_ref = self.world_radius.write().unwrap();
         Bounds3f::bounding_sphere(
-            &scene.world_bound(),
+            scene.world_bound(),
             &mut world_center_ref,
             &mut world_radius_ref,
         );

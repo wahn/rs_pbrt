@@ -60,7 +60,7 @@ impl AOIntegrator {
         let mut isect: SurfaceInteraction = SurfaceInteraction::default();
         if scene.intersect(ray, &mut isect) {
             let mode: TransportMode = TransportMode::Radiance;
-            isect.compute_scattering_functions(&ray, true, mode);
+            isect.compute_scattering_functions(ray, true, mode);
             // if (!isect.bsdf) {
             //     VLOG(2) << "Skipping intersection due to null bsdf";
             //     ray = isect.SpawnRay(ray.d);

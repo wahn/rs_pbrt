@@ -126,9 +126,9 @@ impl Matrix4x4 {
         }
     }
     pub fn inverse(m: &Matrix4x4) -> Matrix4x4 {
-        let mut indxc = vec![0; 4];
-        let mut indxr = vec![0; 4];
-        let mut ipiv = vec![0; 4];
+        let mut indxc = [0; 4];
+        let mut indxr = [0; 4];
+        let mut ipiv = [0; 4];
         let mut minv: Matrix4x4 = Matrix4x4::new(
             m.m[0][0], m.m[0][1], m.m[0][2], m.m[0][3], m.m[1][0], m.m[1][1], m.m[1][2], m.m[1][3],
             m.m[2][0], m.m[2][1], m.m[2][2], m.m[2][3], m.m[3][0], m.m[3][1], m.m[3][2], m.m[3][3],
@@ -248,19 +248,10 @@ pub fn mtx_mul(m1: &Matrix4x4, m2: &Matrix4x4) -> Matrix4x4 {
     r
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct Transform {
     pub m: Matrix4x4,
     pub m_inv: Matrix4x4,
-}
-
-impl Default for Transform {
-    fn default() -> Self {
-        Transform {
-            m: Matrix4x4::default(),
-            m_inv: Matrix4x4::default(),
-        }
-    }
 }
 
 impl Transform {
@@ -924,12 +915,14 @@ impl AnimatedTransform {
         end_transform: &Transform,
         end_time: Float,
     ) -> Self {
-        let mut at: AnimatedTransform = AnimatedTransform::default();
-        at.start_transform = *start_transform;
-        at.end_transform = *end_transform;
-        at.start_time = start_time;
-        at.end_time = end_time;
-        at.actually_animated = *start_transform != *end_transform;
+        let mut at: AnimatedTransform = AnimatedTransform {
+            start_transform: *start_transform,
+            end_transform: *end_transform,
+            start_time,
+            end_time,
+            actually_animated: *start_transform != *end_transform,
+            ..Default::default()
+        };
         AnimatedTransform::decompose(&start_transform.m, &mut at.t[0], &mut at.r[0], &mut at.s[0]);
         AnimatedTransform::decompose(&end_transform.m, &mut at.t[1], &mut at.r[1], &mut at.s[1]);
         // flip _r[1]_ if needed to select shortest path
@@ -2083,7 +2076,7 @@ impl AnimatedTransform {
         *rquat = Quaternion::new(transform);
 
         // compute scale _S_ using rotation and original matrix
-        *s = mtx_mul(&Matrix4x4::inverse(&r), &*m);
+        *s = mtx_mul(&Matrix4x4::inverse(&r), m);
     }
     pub fn interpolate(&self, time: Float, t: &mut Transform) {
         // handle boundary conditions for matrix interpolation
