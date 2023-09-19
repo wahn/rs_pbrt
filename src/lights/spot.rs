@@ -100,7 +100,7 @@ impl SpotLight {
         light_intr.p = self.p_light;
         light_intr.time = iref.time;
         light_intr.medium_interface = Some(medium_interface2_arc);
-        vis.p0 = Some(&iref);
+        vis.p0 = Some(iref);
         vis.p1 = Some(light_intr);
         self.i * self.falloff(&-*wi) / pnt3_distance_squaredf(&self.p_light, &iref.p)
     }
