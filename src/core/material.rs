@@ -3,6 +3,7 @@
 
 //std
 use std::cell::Cell;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::vec3_cross_vec3;
@@ -140,7 +141,7 @@ impl Material {
         si_eval.dpdx = Cell::new(si.dpdx.get());
         si_eval.dpdy = Cell::new(si.dpdy.get());
         if let Some(primitive) = &si.primitive {
-            Arc::new(*primitive);
+            Rc::new(*primitive);
         } else {
             si_eval.primitive = None
         }
