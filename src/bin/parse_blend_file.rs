@@ -2568,7 +2568,7 @@ fn main() -> std::io::Result<()> {
                                                                 image_path.strip_prefix("//")
                                                             {
                                                                 let canonicalized = parent
-                                                                    .join(relative.clone())
+                                                                    .join(relative)
                                                                     .canonicalize()
                                                                     .unwrap();
                                                                 println!("{:?}", canonicalized);
@@ -2582,7 +2582,7 @@ fn main() -> std::io::Result<()> {
                                                                 image_path.strip_prefix("//")
                                                             {
                                                                 let canonicalized = parent
-                                                                    .join(relative.clone())
+                                                                    .join(relative)
                                                                     .canonicalize()
                                                                     .unwrap();
                                                                 println!("{:?}", canonicalized);
