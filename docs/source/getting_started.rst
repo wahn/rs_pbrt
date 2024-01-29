@@ -117,7 +117,7 @@ you get a simple **usage** message of the main executable ``rs_pbrt``:
           # relative path to executable rs_pbrt (assuming release build)
           ./target/release/rs_pbrt --help
           # output
-          Physically based rendering (PBR) with Rust
+          rs_pbrt version 0.9.12 (unknown) [Detected 28 cores]
 	  
           Physically based rendering (PBR) with Rust
 
