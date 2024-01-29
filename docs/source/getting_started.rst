@@ -143,9 +143,9 @@ The **version** can be checked by:
           # print version number
           ./target/release/rs_pbrt --version
           # output
-	  rs_pbrt version 0.9.10 (unknown) [Detected 28 cores]
+	  rs_pbrt version 0.9.11 (unknown) [Detected 28 cores]
 	  
-          rs_pbrt 0.9.10
+          rs_pbrt 0.9.11
 
 Your first rendered image
 =========================
@@ -158,7 +158,7 @@ render a `PNG`_ image (currently always being called ``pbrt.png``):
           # specifing an input file
           ./target/release/rs_pbrt --path ~/git/gitlab/rs-pbrt-test-scenes/pbrt/cornell_box/cornell_box.pbrt
           # output
-	  rs_pbrt version 0.9.10 (unknown) [Detected 28 cores]
+	  rs_pbrt version 0.9.11 (unknown) [Detected 28 cores]
 	  
           Copyright (c) 2016-2023 Jan Douglas Bert Walter.
           Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.
